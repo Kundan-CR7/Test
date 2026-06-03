@@ -1,4 +1,4 @@
-import { appendProductionRow, type ProductionSheetsPayload } from './sheets';
+import { appendProductionRow, type ProductionSheetsPayload } from './sheets.js';
 
 export type AppendProductionResult = {
   status: number;

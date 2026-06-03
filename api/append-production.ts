@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { handleAppendProduction } from './lib/handleAppendProduction';
+import { handleAppendProduction } from './lib/handleAppendProduction.js';
 
 export const config = {
   runtime: 'nodejs',
