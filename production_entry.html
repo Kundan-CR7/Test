@@ -1,0 +1,1533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Production Entry</title>
+    <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        :root {
+            /* Surfaces */
+            --bg-app:        #F4F5F7;
+            --bg-card:       #FFFFFF;
+            --bg-sunken:     #EDEEF1;
+            --bg-overlay:    rgba(15, 17, 21, 0.55);
+
+            /* Text */
+            --text-primary:  #0F1115;
+            --text-secondary:#3D424B;
+            --text-muted:    #6B7280;
+            --text-disabled: #A0A4AB;
+            --text-inverse:  #FFFFFF;
+
+            /* Accent */
+            --accent-600:    #1F6FEB;
+            --accent-700:    #1A5FCC;
+            --accent-50:     #E8F0FE;
+
+            /* Semantic */
+            --success-600:   #1F8F4A;
+            --success-50:    #E5F6EC;
+            --warning-600:   #B26A00;
+            --warning-50:    #FFF4DF;
+            --danger-600:    #C73A3A;
+            --danger-50:     #FCE9E9;
+
+            /* Lines */
+            --border-soft:   #E5E7EB;
+            --border-strong: #D1D5DB;
+            --border-focus:  #1F6FEB;
+
+            /* Shadows */
+            --shadow-sm: 0 1px 2px rgba(15, 17, 21, 0.04), 0 1px 1px rgba(15, 17, 21, 0.03);
+            --shadow-md: 0 4px 12px rgba(15, 17, 21, 0.06), 0 2px 4px rgba(15, 17, 21, 0.04);
+            --shadow-lg: 0 16px 40px rgba(15, 17, 21, 0.18), 0 4px 12px rgba(15, 17, 21, 0.10);
+
+            /* Spacing */
+            --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+            --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
+            --space-14: 56px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-app);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .tabular-nums { font-variant-numeric: tabular-nums; }
+
+        /* Typography Utilities */
+        .text-display-xl { font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.01em; }
+        .text-display-lg { font-size: 24px; line-height: 30px; font-weight: 700; letter-spacing: -0.01em; }
+        .text-heading-lg { font-size: 20px; line-height: 26px; font-weight: 600; letter-spacing: -0.005em; }
+        .text-heading-md { font-size: 17px; line-height: 22px; font-weight: 600; }
+        .text-heading-sm { font-size: 15px; line-height: 20px; font-weight: 600; }
+        .text-body-lg { font-size: 17px; line-height: 24px; font-weight: 400; }
+        .text-body-md { font-size: 15px; line-height: 20px; font-weight: 400; }
+        .text-body-sm { font-size: 13px; line-height: 18px; font-weight: 500; }
+        .text-caption { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0.005em; }
+        .text-micro { font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+
+        .text-muted { color: var(--text-muted); }
+        .text-secondary { color: var(--text-secondary); }
+        .text-primary { color: var(--text-primary); }
+        .text-danger { color: var(--danger-600); }
+        .text-accent { color: var(--accent-600); }
+        .text-warning { color: var(--warning-600); }
+
+        /* Layout */
+        .app-container {
+            max-width: 480px;
+            margin: 0 auto;
+            min-height: 100dvh;
+            padding: 0 var(--space-4) calc(env(safe-area-inset-bottom) + 96px) var(--space-4);
+            position: relative;
+        }
+
+        .header {
+            height: 56px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: sticky;
+            top: 0;
+            background-color: var(--bg-app);
+            z-index: 10;
+            padding-top: env(safe-area-inset-top);
+            margin-bottom: var(--space-4);
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-soft);
+            border-radius: 16px;
+            box-shadow: var(--shadow-sm);
+            padding: var(--space-4);
+            margin-bottom: var(--space-6);
+        }
+
+        /* Forms */
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+            margin-bottom: var(--space-4);
+        }
+        .field-group:last-child { margin-bottom: 0; }
+
+        .flex-row { display: flex; gap: var(--space-3); }
+        .flex-1 { flex: 1; min-width: 0; }
+
+        label {
+            font-size: 13px;
+            line-height: 18px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        input[type="text"], input[type="number"], input[type="date"], input[type="time"], select, textarea {
+            height: 48px;
+            padding: 0 14px;
+            border-radius: 12px;
+            border: 1px solid var(--border-soft);
+            background: var(--bg-card);
+            font-size: 17px;
+            font-family: inherit;
+            color: var(--text-primary);
+            width: 100%;
+            transition: all 120ms ease-out;
+            appearance: none;
+        }
+        select {
+            background-image: url('data:image/svg+xml;utf8,<svg fill="none" stroke="%233D424B" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>');
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-size: 16px;
+            padding-right: 40px;
+        }
+        textarea {
+            height: auto;
+            min-height: 96px;
+            max-height: 240px;
+            padding: var(--space-3) var(--space-4);
+            resize: vertical;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 4px var(--accent-50);
+        }
+        input:disabled, select:disabled {
+            background: var(--bg-sunken);
+            color: var(--text-disabled);
+            cursor: not-allowed;
+        }
+        .input-error {
+            border-color: var(--danger-600) !important;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 48px;
+            padding: 0 20px;
+            border-radius: 14px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 120ms ease-out;
+            text-align: center;
+            width: 100%;
+            font-family: inherit;
+        }
+        .btn:active { transform: scale(0.96); }
+        .btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-50), 0 0 0 4px var(--accent-600); }
+        .btn-primary { background: var(--accent-600); color: var(--text-inverse); }
+        .btn-primary:active { background: var(--accent-700); }
+        .btn-primary:disabled { background: var(--accent-600); opacity: 0.3; pointer-events: none; }
+        .btn-secondary { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-strong); }
+        .btn-ghost { background: transparent; color: var(--text-secondary); }
+        .btn-ghost:hover { background: var(--bg-sunken); }
+        
+        /* Segmented Control */
+        .segmented-control {
+            display: flex;
+            background: var(--bg-sunken);
+            border-radius: 12px;
+            padding: 4px;
+        }
+        .segment-btn {
+            flex: 1;
+            height: 44px;
+            border-radius: 10px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 140ms cubic-bezier(0.2, 0, 0, 1);
+        }
+        .segment-btn.active {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            font-weight: 600;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Live Totals */
+        .totals-strip {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: var(--space-3);
+            margin-bottom: var(--space-6);
+        }
+        .total-tile {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: var(--space-3) var(--space-4);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        /* Add CNC Button */
+        .btn-add-cnc {
+            width: 100%;
+            height: 56px;
+            background: var(--bg-card);
+            border: 1.5px dashed var(--border-strong);
+            border-radius: 16px;
+            color: var(--accent-600);
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 120ms ease-out;
+            margin-bottom: var(--space-6);
+        }
+        .btn-add-cnc:active { background: var(--accent-50); }
+
+        /* Chips */
+        .chip-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--space-2);
+        }
+        .chip {
+            height: 44px;
+            border-radius: 999px;
+            border: none;
+            background: var(--bg-sunken);
+            color: var(--text-secondary);
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 140ms cubic-bezier(0.2, 0, 0, 1);
+            font-variant-numeric: tabular-nums;
+        }
+        .chip.active {
+            background: var(--accent-600);
+            color: var(--text-inverse);
+            box-shadow: var(--shadow-sm);
+        }
+        .chip-rail {
+            display: flex;
+            gap: var(--space-2);
+            overflow-x: auto;
+            padding-bottom: 4px;
+            margin-top: var(--space-2);
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        .chip-rail::-webkit-scrollbar { display: none; }
+        .chip-small {
+            height: 32px;
+            padding: 0 16px;
+            font-size: 15px;
+        }
+
+        /* Combined Cycle Time */
+        .cycle-time-container {
+            display: flex;
+            border: 1px solid var(--border-soft);
+            border-radius: 12px;
+            height: 48px;
+            background: var(--bg-card);
+            align-items: center;
+            overflow: hidden;
+        }
+        .cycle-time-container input {
+            border: none;
+            height: 100%;
+            background: transparent;
+            text-align: center;
+            border-radius: 0;
+            padding: 0 4px;
+        }
+        .cycle-time-container input:focus { box-shadow: none; }
+        .cycle-time-container:focus-within {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 4px var(--accent-50);
+        }
+        .cycle-divider { width: 1px; height: 100%; background: var(--border-soft); }
+        .cycle-suffix { font-size: 12px; color: var(--text-muted); padding-right: 12px; font-weight: 500; }
+
+        /* Parts Count */
+        .input-parts {
+            height: 56px !important;
+            font-size: 22px !important;
+            font-weight: 600;
+            text-align: right;
+            padding-right: 48px !important;
+        }
+        .parts-wrapper { position: relative; }
+        .parts-suffix {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 15px;
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        /* Production Hours Display */
+        .prod-hours-display {
+            height: 56px;
+            border-radius: 12px;
+            background: var(--bg-sunken);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 0 14px;
+            gap: var(--space-1);
+        }
+        .prod-hours-display.valid { background: var(--accent-50); }
+        .prod-hours-display.valid .num { color: var(--accent-600); }
+        .prod-hours-display .num { font-size: 24px; font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+        .prod-hours-display .suffix { font-size: 15px; color: var(--text-secondary); }
+
+        /* Sticky Action Bar */
+        .action-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: calc(72px + env(safe-area-inset-bottom));
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-soft);
+            padding: 0 var(--space-4) env(safe-area-inset-bottom) var(--space-4);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 40;
+            transition: box-shadow 150ms ease;
+        }
+        .action-bar.scrolled { box-shadow: var(--shadow-md); }
+        .action-bar .total-block { display: flex; flex-direction: column; }
+        .action-bar .btn-preview { height: 48px; border-radius: 14px; width: auto; min-width: 160px; }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--bg-overlay);
+            z-index: 50;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 200ms ease;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+        .modal-overlay.open { opacity: 1; visibility: visible; }
+        
+        .bottom-sheet {
+            background: var(--bg-card);
+            width: 100%;
+            max-width: 520px;
+            border-radius: 20px 20px 0 0;
+            padding: var(--space-5) var(--space-5) calc(env(safe-area-inset-bottom) + var(--space-5)) var(--space-5);
+            transform: translateY(100%);
+            transition: transform 260ms cubic-bezier(0.32, 0.72, 0, 1);
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+        @media(min-width: 640px) {
+            .modal-overlay { align-items: center; }
+            .bottom-sheet { border-radius: 16px; padding-bottom: var(--space-5); transform: translateY(20px) scale(0.95); }
+            .modal-overlay.open .bottom-sheet { transform: translateY(0) scale(1); }
+        }
+        .modal-overlay.open .bottom-sheet { transform: translateY(0); }
+        
+        .modal-header-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 56px;
+            flex-shrink: 0;
+            border-bottom: 1px solid var(--border-soft);
+            margin: -20px -20px 16px -20px;
+            padding: 0 8px;
+        }
+
+        /* Summary PNG Target */
+        #summaryCanvasSource {
+            position: absolute;
+            top: -10000px;
+            left: 0;
+            width: 540px;
+            background: #FFFFFF;
+            padding: 32px;
+            color: #0F1115;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-size: 17px;
+        }
+        .png-divider { height: 1px; background: #E5E7EB; margin: 24px 0; }
+        .png-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: calc(72px + env(safe-area-inset-bottom) + 16px);
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--text-primary);
+            color: var(--text-inverse);
+            padding: var(--space-3) var(--space-4);
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 500;
+            box-shadow: var(--shadow-lg);
+            z-index: 60;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 180ms ease-out;
+            max-width: 420px;
+            width: calc(100% - 32px);
+            text-align: center;
+        }
+        .toast.show { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
+
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .justify-between { justify-content: space-between; }
+        .items-center { align-items: center; }
+        .mt-1 { margin-top: 4px; } .mt-2 { margin-top: 8px; } .mt-4 { margin-top: 16px; }
+        .mb-2 { margin-bottom: 8px; } .mb-4 { margin-bottom: 16px; }
+        .text-right { text-align: right; }
+        .cursor-pointer { cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="app-container" id="app">
+    <!-- Header -->
+    <header class="header">
+        <h1 class="text-heading-lg">Production Entry</h1>
+        <div class="text-caption text-muted mt-1" id="headerDateLine"></div>
+    </header>
+
+    <!-- Date & Shift Card -->
+    <div class="card">
+        <div class="field-group">
+            <label for="inputDate">Date</label>
+            <input type="date" id="inputDate">
+        </div>
+        <div class="field-group">
+            <div class="segmented-control" id="shiftControl">
+                <button class="segment-btn active" data-value="morning">Morning Shift</button>
+                <button class="segment-btn" data-value="evening">Evening Shift</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Totals -->
+    <div class="totals-strip">
+        <div class="total-tile">
+            <div class="text-micro text-muted">CNC HOURS</div>
+            <div class="text-display-lg tabular-nums mt-1" id="totalCncHoursVal">0.00</div>
+        </div>
+        <div class="total-tile">
+            <div class="text-micro text-muted">ENTRIES</div>
+            <div class="text-display-lg tabular-nums mt-1" id="totalEntriesVal">0</div>
+        </div>
+        <div class="total-tile">
+            <div class="text-micro text-muted">BURMA</div>
+            <div class="text-display-lg tabular-nums mt-1" id="totalBurmaVal">0</div>
+        </div>
+    </div>
+
+    <!-- CNC Section -->
+    <div class="mb-2" style="padding-left: 8px;">
+        <h2 class="text-heading-md">CNC Production</h2>
+        <p class="text-body-md text-muted mt-1">Add one entry per machine + size + side.</p>
+    </div>
+
+    <div id="cncList">
+        <!-- CNC Cards will be injected here -->
+    </div>
+
+    <button class="btn-add-cnc" id="btnAddCnc">+ Add CNC Entry</button>
+
+    <!-- Burma Section -->
+    <div class="card">
+        <h2 class="text-heading-md mb-4">Burma Production</h2>
+        <div class="field-group flex-row items-center justify-between">
+            <label class="text-body-md">Burma 1</label>
+            <input type="number" inputmode="numeric" pattern="[0-9]*" class="tabular-nums text-right" style="width: 100px; height: 44px;" id="b1">
+        </div>
+        <div class="field-group flex-row items-center justify-between">
+            <label class="text-body-md">Burma 2</label>
+            <input type="number" inputmode="numeric" pattern="[0-9]*" class="tabular-nums text-right" style="width: 100px; height: 44px;" id="b2">
+        </div>
+        <div class="field-group flex-row items-center justify-between" style="border-bottom: 1px solid var(--border-soft); padding-bottom: 16px;">
+            <label class="text-body-md">Burma 3</label>
+            <input type="number" inputmode="numeric" pattern="[0-9]*" class="tabular-nums text-right" style="width: 100px; height: 44px;" id="b3">
+        </div>
+        <div class="flex-row items-center justify-between mt-4">
+            <div class="text-body-sm font-bold" style="font-weight: 600;">Total Burma Count</div>
+            <div class="text-heading-md tabular-nums" style="font-weight: 700;" id="burmaFooterTotal">0</div>
+        </div>
+    </div>
+
+    <!-- Repair Section -->
+    <div class="card">
+        <div class="flex-row items-center justify-between mb-4">
+            <h2 class="text-heading-md">Repair Work</h2>
+            <div class="text-caption text-muted" style="background: var(--bg-sunken); padding: 2px 8px; border-radius: 999px;">Optional</div>
+        </div>
+        <div class="field-group">
+            <label>Repair Person</label>
+            <select id="repairPersonSelect">
+                <option value="">Select...</option>
+                <!-- Populated by JS -->
+            </select>
+        </div>
+        <div class="field-group">
+            <label>Repair Count</label>
+            <input type="number" inputmode="numeric" pattern="[0-9]*" class="tabular-nums text-right" id="repairCount">
+        </div>
+        <div class="field-group">
+            <label>Repair Note</label>
+            <input type="text" id="repairNote" placeholder="e.g. Thread repair">
+        </div>
+    </div>
+
+    <!-- Notes Section -->
+    <div class="card">
+        <div class="flex-row items-center justify-between mb-4">
+            <h2 class="text-heading-md">Notes</h2>
+            <div class="text-caption text-muted" style="background: var(--bg-sunken); padding: 2px 8px; border-radius: 999px;">Optional</div>
+        </div>
+        <textarea id="globalNotes" placeholder="Anything extra — machine issue, power cut, material delay…"></textarea>
+    </div>
+
+</div>
+
+<!-- Sticky Action Bar -->
+<div class="action-bar" id="actionBar">
+    <div class="total-block">
+        <div class="text-caption text-muted">Total CNC</div>
+        <div class="text-heading-md tabular-nums" style="font-weight: 700;" id="actionTotalCnc">0.00 hrs</div>
+    </div>
+    <button class="btn btn-primary btn-preview" id="btnOpenPreview">Preview Summary</button>
+</div>
+
+<!-- Template for CNC Card -->
+<template id="cncCardTemplate">
+    <div class="card cnc-card">
+        <!-- Warning Banner -->
+        <div class="cnc-warning hidden mb-4" style="background: var(--warning-50); color: var(--warning-600); padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 500;">
+            ⚠ Please complete this entry.
+        </div>
+        
+        <div class="flex-row justify-between items-center mb-4 cnc-header-row">
+            <div>
+                <div class="text-heading-sm cnc-title">CNC Entry</div>
+                <div class="text-body-sm text-muted mt-1 cnc-subtitle"></div>
+            </div>
+            <div class="flex-row items-center gap-2">
+                <div class="text-body-md tabular-nums cnc-status" style="font-weight: 700;"></div>
+            </div>
+        </div>
+        
+        <div class="cnc-actions-row flex-row justify-between mb-4">
+            <button class="btn btn-ghost btn-duplicate" style="height: 36px; padding: 0 12px; font-size: 14px;">Duplicate</button>
+            <button class="btn btn-ghost btn-remove" style="height: 36px; padding: 0 12px; font-size: 14px;">Remove</button>
+        </div>
+
+        <div class="cnc-confirm-remove hidden mb-4 flex-row justify-between items-center" style="background: var(--bg-sunken); padding: 8px 12px; border-radius: 12px;">
+            <div class="text-body-sm">Remove this entry?</div>
+            <div class="flex-row gap-2">
+                <button class="btn btn-secondary btn-cancel-remove" style="height: 36px; padding: 0 12px; font-size: 14px;">Cancel</button>
+                <button class="btn btn-primary btn-confirm-remove" style="background: var(--danger-600); height: 36px; padding: 0 12px; font-size: 14px;">Remove</button>
+            </div>
+        </div>
+
+        <div class="field-group">
+            <label>Operator</label>
+            <select class="cnc-operator">
+                <option value="">Select...</option>
+                <!-- Populated dynamically -->
+            </select>
+            <div class="text-body-sm text-accent font-bold mt-1 cursor-pointer btn-add-person" style="font-weight: 600;">+ Add new person</div>
+            <div class="text-caption text-danger hidden error-operator mt-1">Required</div>
+        </div>
+
+        <div class="field-group">
+            <label>Machine</label>
+            <div class="chip-grid cnc-machine">
+                <button class="chip" data-val="M1">M1</button>
+                <button class="chip" data-val="M2">M2</button>
+                <button class="chip" data-val="M3">M3</button>
+                <button class="chip" data-val="M4">M4</button>
+                <button class="chip" data-val="M5">M5</button>
+                <button class="chip" data-val="M6">M6</button>
+                <button class="chip" data-val="M7">M7</button>
+                <button class="chip" data-val="M8">M8</button>
+            </div>
+            <div class="text-caption text-danger hidden error-machine mt-1">Required</div>
+        </div>
+
+        <div class="field-group">
+            <label>Hex</label>
+            <input type="number" inputmode="numeric" pattern="[0-9]*" class="cnc-hex text-right tabular-nums">
+            <div class="chip-rail">
+                <div class="text-caption text-muted" style="padding-top: 8px; margin-right: 8px;">Common:</div>
+                <button class="chip chip-small cnc-hex-chip" data-val="37">37</button>
+                <button class="chip chip-small cnc-hex-chip" data-val="41">41</button>
+                <button class="chip chip-small cnc-hex-chip" data-val="55">55</button>
+                <button class="chip chip-small cnc-hex-chip" data-val="60">60</button>
+                <button class="chip chip-small cnc-hex-chip" data-val="65">65</button>
+            </div>
+            <div class="text-caption text-danger hidden error-hex mt-1">Hex must be between 0 and 100.</div>
+        </div>
+
+        <div class="field-group flex-row">
+            <div class="flex-1 field-group" style="margin-bottom: 0;">
+                <label>Size</label>
+                <select class="cnc-size">
+                    <option value="">Select...</option>
+                    <option value="1/2">1/2</option>
+                    <option value="3/4">3/4</option>
+                    <option value="1 inch">1 inch</option>
+                    <option value="1-1/2">1-1/2</option>
+                    <option value="2 inch">2 inch</option>
+                    <option value="2-1/2">2-1/2</option>
+                    <option value="3 inch">3 inch</option>
+                    <option value="Custom...">Custom...</option>
+                </select>
+                <input type="text" class="cnc-size-custom hidden mt-2" placeholder="Enter size">
+                <div class="text-caption text-accent cursor-pointer cnc-size-back hidden mt-1">← back to list</div>
+                <div class="text-caption text-danger hidden error-size mt-1">Required</div>
+            </div>
+            <div class="flex-1 field-group" style="margin-bottom: 0;">
+                <label>Side</label>
+                <div class="segmented-control cnc-side" style="height: 48px;">
+                    <button class="segment-btn active" data-val="1">Side 1</button>
+                    <button class="segment-btn" data-val="2">Side 2</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="field-group">
+            <label>Cycle Time</label>
+            <div class="cycle-time-container cnc-cycle">
+                <input type="number" inputmode="numeric" pattern="[0-9]*" class="cnc-cycle-min tabular-nums" placeholder="0">
+                <div class="cycle-suffix">min</div>
+                <div class="cycle-divider"></div>
+                <input type="number" inputmode="numeric" pattern="[0-9]*" class="cnc-cycle-sec tabular-nums" placeholder="00">
+                <div class="cycle-suffix">sec</div>
+            </div>
+            <div class="text-caption text-danger hidden error-cycle mt-1">Cycle time can't be zero.</div>
+            <div class="text-caption text-warning hidden warn-cycle mt-1"></div>
+        </div>
+
+        <div class="field-group flex-row">
+            <div class="flex-1 field-group" style="margin-bottom: 0;">
+                <label>Time In</label>
+                <input type="time" class="cnc-time-in">
+            </div>
+            <div class="flex-1 field-group" style="margin-bottom: 0;">
+                <label>Time Out</label>
+                <input type="time" class="cnc-time-out">
+            </div>
+        </div>
+        <div class="text-caption text-danger hidden error-time mt-1">Time Out should be after Time In.</div>
+
+        <div class="field-group">
+            <label>Parts Count</label>
+            <div class="parts-wrapper">
+                <input type="number" inputmode="numeric" pattern="[0-9]*" class="cnc-parts input-parts">
+                <div class="parts-suffix">pcs</div>
+            </div>
+            <div class="text-caption text-danger hidden error-parts mt-1">Required</div>
+        </div>
+
+        <div class="field-group">
+            <label>Production Hours</label>
+            <div class="prod-hours-display cnc-hours-display">
+                <div class="num">—</div>
+                <div class="suffix">hrs</div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Summary Modal -->
+<div class="modal-overlay" id="summaryModal">
+    <div class="bottom-sheet" style="padding-top: 20px;">
+        <div class="modal-header-bar">
+            <button class="btn btn-ghost" id="btnSummaryBack" style="width: auto; padding: 0 12px; font-size: 24px; line-height: 1;">←</button>
+            <div class="text-heading-lg flex-1 text-center" style="margin-left: -36px;">Production Summary</div>
+            <div style="width: 36px;"></div>
+        </div>
+
+        <div class="cnc-warning hidden mb-4" id="summaryIncompleteWarn" style="background: var(--warning-50); color: var(--warning-600); padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 500;">
+            ⚠ 1 CNC entry is incomplete and won't be included.
+        </div>
+
+        <div id="summaryPreviewScroll" style="overflow-y: auto; overscroll-behavior: contain; flex: 1; margin-bottom: 16px; border-radius: 12px; border: 1px solid var(--border-soft); background: #fff; padding: 16px;">
+            <!-- Rendered snapshot replica for UI viewing -->
+            <div id="summaryUiReplica"></div>
+            
+            <div id="summaryThumbnailContainer" class="hidden mt-4" style="text-align: center;">
+                <div class="text-success text-body-sm mb-2" style="color: var(--success-600); font-weight: 600;">✓ Image ready</div>
+                <img id="summaryThumbnailImg" src="" style="width: 180px; border-radius: 8px; border: 1px solid var(--border-soft); box-shadow: var(--shadow-sm);">
+            </div>
+        </div>
+
+        <div class="field-group" style="margin-bottom: 0;">
+            <button class="btn btn-primary" id="btnGenerateImage">Generate Image</button>
+            <button class="btn btn-primary hidden" id="btnShareImage" style="background: #25D366;">Share on WhatsApp</button>
+            <button class="btn btn-secondary hidden mt-2" id="btnDownloadImage">Download Image</button>
+            <button class="btn btn-secondary mt-2" id="btnEditEntry">Edit Entry</button>
+        </div>
+    </div>
+</div>
+
+<!-- Add Person Modal -->
+<div class="modal-overlay" id="personModal">
+    <div class="bottom-sheet" style="max-height: unset; transform: translateY(100%);">
+        <div style="width: 40px; height: 4px; background: var(--border-strong); border-radius: 999px; margin: 0 auto 20px auto;"></div>
+        <h2 class="text-heading-lg mb-1">Add New Person</h2>
+        <p class="text-body-md text-muted mb-4">Add a new operator to this device.</p>
+        
+        <div class="field-group">
+            <label>Person Name</label>
+            <input type="text" id="newPersonName" placeholder="Type a name…">
+            <div class="text-caption text-danger hidden mt-1" id="personError"></div>
+        </div>
+        <p class="text-caption text-muted mb-6">This name will be saved on this phone for future entries.</p>
+
+        <div class="flex-row">
+            <button class="btn btn-secondary flex-1" id="btnCancelPerson">Cancel</button>
+            <button class="btn btn-primary flex-1" id="btnAddPersonSubmit" disabled>Add Person</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toastMsg"></div>
+
+<!-- Hidden Canvas Source for html2canvas -->
+<div id="summaryCanvasSource">
+    <!-- Populated dynamically before capture -->
+</div>
+
+<script>
+/**
+ * State Management
+ */
+const STORAGE_KEY = 'productionEntry.v1.draft';
+const PEOPLE_KEY = 'productionEntry.v1.customPeople';
+
+const basePeople = ['Avinash', 'Raju', 'Sonu'];
+let customPeople = JSON.parse(localStorage.getItem(PEOPLE_KEY) || '[]');
+let people = Array.from(new Set([...basePeople, ...customPeople]));
+
+const defaultShiftIn = { 'morning': '08:30', 'evening': '19:00' };
+const defaultShiftOut = { 'morning': '18:30', 'evening': '21:30' };
+
+let state = {
+    date: new Date().toISOString().split('T')[0],
+    shift: 'morning',
+    cncEntries: [],
+    burma: { b1: '', b2: '', b3: '' },
+    repair: { person: '', count: '', note: '' },
+    notes: '',
+    ui: { incompleteHighlights: false }
+};
+
+// Generate UUID
+function uuid() { return Math.random().toString(36).substring(2, 9); }
+
+function saveDraft() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function loadDraft() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+        try {
+            const parsed = JSON.parse(saved);
+            if (parsed.date === state.date) {
+                state = parsed;
+            }
+        } catch (e) {}
+    }
+}
+
+/**
+ * Calculations
+ */
+function getCycleSeconds(min, sec) {
+    const m = parseInt(min) || 0;
+    const s = parseInt(sec) || 0;
+    return (m * 60) + s;
+}
+
+function calcProductionHours(entry) {
+    const cycleSec = getCycleSeconds(entry.cycleMinutes, entry.cycleSeconds);
+    const count = parseInt(entry.partsCount) || 0;
+    if (cycleSec <= 0 || count <= 0) return null;
+    return Math.round((cycleSec * count / 3600) * 100) / 100;
+}
+
+function isEntryValid(entry) {
+    if (!entry.operator) return false;
+    if (!entry.machine) return false;
+    if (entry.hex === '' || entry.hex < 0 || entry.hex > 100) return false;
+    if (!entry.size) return false;
+    if (!entry.side) return false;
+    if (getCycleSeconds(entry.cycleMinutes, entry.cycleSeconds) <= 0) return false;
+    if (!entry.partsCount || parseInt(entry.partsCount) <= 0) return false;
+    if (entry.timeIn && entry.timeOut && entry.timeOut <= entry.timeIn) return false;
+    return true;
+}
+
+function recomputeTotals() {
+    let cncHrs = 0;
+    let validEntries = 0;
+    state.cncEntries.forEach(e => {
+        const hrs = calcProductionHours(e);
+        e.productionHours = hrs;
+        if (hrs !== null) {
+            cncHrs += hrs;
+        }
+        if (isEntryValid(e)) validEntries++;
+    });
+    
+    const b1 = parseInt(state.burma.b1) || 0;
+    const b2 = parseInt(state.burma.b2) || 0;
+    const b3 = parseInt(state.burma.b3) || 0;
+    const totalBurma = b1 + b2 + b3;
+
+    // Update DOM
+    document.getElementById('totalCncHoursVal').textContent = cncHrs.toFixed(2);
+    document.getElementById('totalEntriesVal').textContent = state.cncEntries.length;
+    document.getElementById('totalBurmaVal').textContent = totalBurma;
+    document.getElementById('burmaFooterTotal').textContent = totalBurma.toLocaleString('en-IN');
+    
+    document.getElementById('actionTotalCnc').textContent = cncHrs.toFixed(2) + ' hrs';
+    
+    const btnPreview = document.getElementById('btnOpenPreview');
+    const hasData = validEntries > 0 || totalBurma > 0;
+    const hasIncomplete = state.cncEntries.length > validEntries;
+    
+    btnPreview.disabled = !hasData && state.cncEntries.length === 0;
+    
+    if (hasIncomplete && hasData) {
+        btnPreview.innerHTML = '⚠ Preview Summary';
+    } else {
+        btnPreview.innerHTML = 'Preview Summary';
+    }
+
+    saveDraft();
+}
+
+/**
+ * DOM Management
+ */
+const dateInput = document.getElementById('inputDate');
+const headerDateLine = document.getElementById('headerDateLine');
+
+function formatDateStr(dStr) {
+    const opts = { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' };
+    return new Date(dStr).toLocaleDateString('en-GB', opts);
+}
+
+function initDOM() {
+    loadDraft();
+    
+    dateInput.value = state.date;
+    headerDateLine.textContent = formatDateStr(state.date);
+    
+    dateInput.addEventListener('change', e => {
+        state.date = e.target.value;
+        headerDateLine.textContent = formatDateStr(state.date);
+        saveDraft();
+    });
+
+    document.querySelectorAll('#shiftControl .segment-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+            document.querySelectorAll('#shiftControl .segment-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            state.shift = e.target.dataset.value;
+            
+            // Smart update untouched times
+            state.cncEntries.forEach(entry => {
+                if (!entry.timeInTouched) entry.timeIn = defaultShiftIn[state.shift];
+                if (!entry.timeOutTouched) entry.timeOut = defaultShiftOut[state.shift];
+            });
+            renderAllCncCards();
+            saveDraft();
+        });
+        if (btn.dataset.value === state.shift) btn.classList.add('active');
+        else btn.classList.remove('active');
+    });
+
+    // Burma
+    ['b1', 'b2', 'b3'].forEach(id => {
+        const el = document.getElementById(id);
+        el.value = state.burma[id];
+        el.addEventListener('input', e => {
+            state.burma[id] = e.target.value;
+            recomputeTotals();
+        });
+    });
+
+    // Repair & Notes
+    populatePeopleSelects();
+    const repPerson = document.getElementById('repairPersonSelect');
+    repPerson.value = state.repair.person;
+    repPerson.addEventListener('change', e => { state.repair.person = e.target.value; saveDraft(); });
+    
+    const repCount = document.getElementById('repairCount');
+    repCount.value = state.repair.count;
+    repCount.addEventListener('input', e => { state.repair.count = e.target.value; saveDraft(); });
+    
+    const repNote = document.getElementById('repairNote');
+    repNote.value = state.repair.note;
+    repNote.addEventListener('input', e => { state.repair.note = e.target.value; saveDraft(); });
+    
+    const gNotes = document.getElementById('globalNotes');
+    gNotes.value = state.notes;
+    gNotes.addEventListener('input', e => { state.notes = e.target.value; saveDraft(); });
+
+    if (state.cncEntries.length === 0) {
+        addCncEntry();
+    } else {
+        renderAllCncCards();
+        recomputeTotals();
+    }
+}
+
+function populatePeopleSelects() {
+    const opts = `<option value="">Select...</option>` + people.map(p => `<option value="${p}">${p}</option>`).join('');
+    document.querySelectorAll('.cnc-operator').forEach(sel => {
+        const val = sel.value;
+        sel.innerHTML = opts;
+        sel.value = val;
+    });
+    const rSel = document.getElementById('repairPersonSelect');
+    const rVal = rSel.value;
+    rSel.innerHTML = opts;
+    rSel.value = rVal;
+}
+
+/**
+ * CNC Cards logic
+ */
+function createNewEntry(inheritFrom = null) {
+    const timeIn = inheritFrom ? inheritFrom.timeIn : defaultShiftIn[state.shift];
+    const timeOut = inheritFrom ? inheritFrom.timeOut : defaultShiftOut[state.shift];
+    return {
+        id: uuid(), operator: inheritFrom?.operator || '', machine: inheritFrom?.machine || '',
+        hex: inheritFrom?.hex ?? '', size: inheritFrom?.size || '', side: inheritFrom?.side || '1',
+        cycleMinutes: inheritFrom?.cycleMinutes || '', cycleSeconds: inheritFrom?.cycleSeconds || '',
+        timeIn, timeOut, partsCount: '', productionHours: null,
+        timeInTouched: inheritFrom ? true : false, timeOutTouched: inheritFrom ? true : false
+    };
+}
+
+function addCncEntry() {
+    let inherit = null;
+    if (state.cncEntries.length > 0) {
+        inherit = state.cncEntries[state.cncEntries.length - 1];
+    }
+    const newEntry = createNewEntry(inherit);
+    if (inherit) newEntry.partsCount = ''; // don't copy count
+    state.cncEntries.push(newEntry);
+    renderAllCncCards();
+    recomputeTotals();
+}
+
+document.getElementById('btnAddCnc').addEventListener('click', addCncEntry);
+
+function renderAllCncCards() {
+    const container = document.getElementById('cncList');
+    container.innerHTML = '';
+    state.cncEntries.forEach((entry, idx) => {
+        container.appendChild(buildCncCardDOM(entry, idx));
+    });
+    populatePeopleSelects();
+    
+    // Set values
+    state.cncEntries.forEach(entry => {
+        const card = document.getElementById(`cnc-${entry.id}`);
+        card.querySelector('.cnc-operator').value = entry.operator;
+        if(entry.machine) {
+            card.querySelectorAll('.cnc-machine .chip').forEach(c => {
+                if (c.dataset.val === entry.machine) c.classList.add('active');
+            });
+        }
+        card.querySelector('.cnc-hex').value = entry.hex;
+        
+        const sizeSel = card.querySelector('.cnc-size');
+        const customSize = card.querySelector('.cnc-size-custom');
+        const backBtn = card.querySelector('.cnc-size-back');
+        let matched = false;
+        Array.from(sizeSel.options).forEach(o => { if(o.value === entry.size) matched = true; });
+        if(matched) {
+            sizeSel.value = entry.size;
+        } else if (entry.size !== '') {
+            sizeSel.value = 'Custom...';
+            sizeSel.classList.add('hidden');
+            customSize.classList.remove('hidden');
+            customSize.value = entry.size;
+            backBtn.classList.remove('hidden');
+        }
+
+        card.querySelectorAll('.cnc-side .segment-btn').forEach(c => {
+            if (c.dataset.val == entry.side) c.classList.add('active');
+            else c.classList.remove('active');
+        });
+
+        card.querySelector('.cnc-cycle-min').value = entry.cycleMinutes;
+        card.querySelector('.cnc-cycle-sec').value = entry.cycleSeconds;
+        card.querySelector('.cnc-time-in').value = entry.timeIn;
+        card.querySelector('.cnc-time-out').value = entry.timeOut;
+        card.querySelector('.cnc-parts').value = entry.partsCount;
+
+        updateCardVisuals(card, entry, idx);
+    });
+}
+
+function buildCncCardDOM(entry, idx) {
+    const tmpl = document.getElementById('cncCardTemplate').content.cloneNode(true);
+    const card = tmpl.querySelector('.card');
+    card.id = `cnc-${entry.id}`;
+    
+    // Bind Events
+    card.querySelector('.cnc-operator').addEventListener('change', e => { entry.operator = e.target.value; triggerUpdate(card, entry, idx); });
+    
+    card.querySelector('.btn-add-person').addEventListener('click', () => {
+        openPersonModal(entry.id);
+    });
+
+    card.querySelectorAll('.cnc-machine .chip').forEach(btn => {
+        btn.addEventListener('click', e => {
+            card.querySelectorAll('.cnc-machine .chip').forEach(c => c.classList.remove('active'));
+            e.target.classList.add('active');
+            entry.machine = e.target.dataset.val;
+            triggerUpdate(card, entry, idx);
+        });
+    });
+
+    const hexIn = card.querySelector('.cnc-hex');
+    hexIn.addEventListener('input', e => { entry.hex = e.target.value; updateHexChips(card, entry.hex); triggerUpdate(card, entry, idx); });
+    card.querySelectorAll('.cnc-hex-chip').forEach(btn => {
+        btn.addEventListener('click', e => {
+            entry.hex = e.target.dataset.val;
+            hexIn.value = entry.hex;
+            updateHexChips(card, entry.hex);
+            triggerUpdate(card, entry, idx);
+        });
+    });
+
+    const sizeSel = card.querySelector('.cnc-size');
+    const customSize = card.querySelector('.cnc-size-custom');
+    const backBtn = card.querySelector('.cnc-size-back');
+    sizeSel.addEventListener('change', e => {
+        if(e.target.value === 'Custom...') {
+            sizeSel.classList.add('hidden');
+            customSize.classList.remove('hidden');
+            backBtn.classList.remove('hidden');
+            customSize.focus();
+            entry.size = '';
+        } else {
+            entry.size = e.target.value;
+        }
+        triggerUpdate(card, entry, idx);
+    });
+    customSize.addEventListener('input', e => { entry.size = e.target.value; triggerUpdate(card, entry, idx); });
+    backBtn.addEventListener('click', () => {
+        customSize.classList.add('hidden');
+        backBtn.classList.add('hidden');
+        sizeSel.classList.remove('hidden');
+        sizeSel.value = '';
+        entry.size = '';
+        triggerUpdate(card, entry, idx);
+    });
+
+    card.querySelectorAll('.cnc-side .segment-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+            card.querySelectorAll('.cnc-side .segment-btn').forEach(c => c.classList.remove('active'));
+            e.target.classList.add('active');
+            entry.side = e.target.dataset.val;
+            triggerUpdate(card, entry, idx);
+        });
+    });
+
+    card.querySelector('.cnc-cycle-min').addEventListener('input', e => { entry.cycleMinutes = e.target.value; triggerUpdate(card, entry, idx); });
+    card.querySelector('.cnc-cycle-sec').addEventListener('input', e => { entry.cycleSeconds = e.target.value; triggerUpdate(card, entry, idx); });
+    
+    card.querySelector('.cnc-time-in').addEventListener('change', e => { entry.timeIn = e.target.value; entry.timeInTouched = true; triggerUpdate(card, entry, idx); });
+    card.querySelector('.cnc-time-out').addEventListener('change', e => { entry.timeOut = e.target.value; entry.timeOutTouched = true; triggerUpdate(card, entry, idx); });
+    
+    const partsIn = card.querySelector('.cnc-parts');
+    partsIn.addEventListener('focus', () => partsIn.select());
+    partsIn.addEventListener('input', e => { entry.partsCount = e.target.value; triggerUpdate(card, entry, idx); });
+
+    // Actions
+    card.querySelector('.btn-duplicate').addEventListener('click', () => {
+        const newEntry = createNewEntry(entry);
+        state.cncEntries.splice(idx + 1, 0, newEntry);
+        renderAllCncCards();
+        recomputeTotals();
+        showToast('Entry duplicated');
+    });
+
+    const btnRemove = card.querySelector('.btn-remove');
+    const confirmBox = card.querySelector('.cnc-confirm-remove');
+    const actionsRow = card.querySelector('.cnc-actions-row');
+    
+    btnRemove.addEventListener('click', () => {
+        // if empty, remove directly
+        if (!entry.operator && !entry.machine && !entry.hex && !entry.partsCount && !entry.cycleMinutes) {
+            doRemove();
+        } else {
+            actionsRow.classList.add('hidden');
+            confirmBox.classList.remove('hidden');
+        }
+    });
+
+    card.querySelector('.btn-cancel-remove').addEventListener('click', () => {
+        confirmBox.classList.add('hidden');
+        actionsRow.classList.remove('hidden');
+    });
+
+    card.querySelector('.btn-confirm-remove').addEventListener('click', doRemove);
+
+    function doRemove() {
+        state.cncEntries.splice(idx, 1);
+        renderAllCncCards();
+        recomputeTotals();
+        showToast('Entry removed');
+    }
+
+    return card;
+}
+
+function updateHexChips(card, val) {
+    card.querySelectorAll('.cnc-hex-chip').forEach(c => {
+        if(c.dataset.val === val) c.classList.add('active');
+        else c.classList.remove('active');
+    });
+}
+
+function triggerUpdate(card, entry, idx) {
+    recomputeTotals();
+    updateCardVisuals(card, entry, idx);
+}
+
+function updateCardVisuals(card, entry, idx) {
+    card.querySelector('.cnc-title').textContent = `CNC Entry ${idx + 1}`;
+    
+    const idParts = [entry.operator, entry.machine, entry.size ? `Sz ${entry.size}` : '', entry.side ? `S${entry.side}` : ''];
+    const idLine = idParts.filter(p => p).join(' · ');
+    card.querySelector('.cnc-subtitle').textContent = idLine;
+
+    const stat = card.querySelector('.cnc-status');
+    const hoursDisp = card.querySelector('.cnc-hours-display');
+    const isValid = isEntryValid(entry);
+    
+    if (isValid) {
+        stat.textContent = entry.productionHours.toFixed(2) + ' hrs';
+        stat.style.color = 'var(--text-primary)';
+        hoursDisp.classList.add('valid');
+        hoursDisp.querySelector('.num').textContent = entry.productionHours.toFixed(2);
+    } else {
+        stat.textContent = 'Incomplete';
+        stat.style.color = 'var(--warning-600)';
+        hoursDisp.classList.remove('valid');
+        hoursDisp.querySelector('.num').textContent = '—';
+    }
+
+    // Validation styling if ui.incompleteHighlights is true
+    if (state.ui.incompleteHighlights) {
+        const warnBanner = card.querySelector('.cnc-warning');
+        if (!isValid) warnBanner.classList.remove('hidden');
+        else warnBanner.classList.add('hidden');
+
+        toggleErr(card, '.error-operator', !entry.operator, '.cnc-operator');
+        toggleErr(card, '.error-machine', !entry.machine, '.cnc-machine');
+        const hexErr = (entry.hex !== '' && (entry.hex < 0 || entry.hex > 100)) || entry.hex === '';
+        toggleErr(card, '.error-hex', hexErr, '.cnc-hex');
+        toggleErr(card, '.error-size', !entry.size, entry.size ? '.cnc-size' : '.cnc-size-custom');
+        
+        const cSec = getCycleSeconds(entry.cycleMinutes, entry.cycleSeconds);
+        toggleErr(card, '.error-cycle', cSec <= 0, '.cnc-cycle');
+        
+        const warnCycle = card.querySelector('.warn-cycle');
+        if (cSec > 0 && cSec < 20) { warnCycle.textContent = 'Cycle time looks low — please confirm.'; warnCycle.classList.remove('hidden'); }
+        else if (cSec > 600) { warnCycle.textContent = 'Cycle time looks high — please confirm.'; warnCycle.classList.remove('hidden'); }
+        else { warnCycle.classList.add('hidden'); }
+
+        const timeErr = entry.timeIn && entry.timeOut && entry.timeOut <= entry.timeIn;
+        toggleErr(card, '.error-time', timeErr, '.cnc-time-out');
+        toggleErr(card, '.error-parts', !entry.partsCount || entry.partsCount <= 0, '.cnc-parts');
+    }
+}
+
+function toggleErr(card, errSel, show, inputSel) {
+    const err = card.querySelector(errSel);
+    const inp = inputSel ? card.querySelector(inputSel) : null;
+    if (show) {
+        err.classList.remove('hidden');
+        if(inp) inp.classList.add('input-error');
+    } else {
+        err.classList.add('hidden');
+        if(inp) inp.classList.remove('input-error');
+    }
+}
+
+/**
+ * Add Person Modal
+ */
+let targetOperatorEntryId = null;
+const personModal = document.getElementById('personModal');
+const inputPerson = document.getElementById('newPersonName');
+const btnAddPersonSubmit = document.getElementById('btnAddPersonSubmit');
+
+function openPersonModal(entryId) {
+    targetOperatorEntryId = entryId;
+    inputPerson.value = '';
+    btnAddPersonSubmit.disabled = true;
+    document.getElementById('personError').classList.add('hidden');
+    personModal.classList.add('open');
+    setTimeout(() => inputPerson.focus(), 300);
+}
+
+function closePersonModal() {
+    personModal.classList.remove('open');
+}
+
+document.getElementById('btnCancelPerson').addEventListener('click', closePersonModal);
+
+inputPerson.addEventListener('input', e => {
+    const val = e.target.value.trim();
+    btnAddPersonSubmit.disabled = val.length === 0;
+    document.getElementById('personError').classList.add('hidden');
+});
+
+btnAddPersonSubmit.addEventListener('click', () => {
+    const val = inputPerson.value.trim();
+    const isDup = people.some(p => p.toLowerCase() === val.toLowerCase());
+    if (isDup) {
+        const err = document.getElementById('personError');
+        err.textContent = 'This person is already in the list.';
+        err.classList.remove('hidden');
+        btnAddPersonSubmit.disabled = true;
+        return;
+    }
+    customPeople.push(val);
+    localStorage.setItem(PEOPLE_KEY, JSON.stringify(customPeople));
+    people.push(val);
+    
+    if (targetOperatorEntryId) {
+        const entry = state.cncEntries.find(e => e.id === targetOperatorEntryId);
+        if (entry) {
+            entry.operator = val;
+            saveDraft();
+        }
+    }
+    closePersonModal();
+    renderAllCncCards();
+    showToast(`Added ${val}`);
+});
+
+/**
+ * Summary & PNG Logic
+ */
+const summaryModal = document.getElementById('summaryModal');
+document.getElementById('btnOpenPreview').addEventListener('click', () => {
+    state.ui.incompleteHighlights = true;
+    renderAllCncCards();
+    
+    const validCount = state.cncEntries.filter(isEntryValid).length;
+    const warn = document.getElementById('summaryIncompleteWarn');
+    if (state.cncEntries.length > validCount) {
+        warn.textContent = `⚠ ${state.cncEntries.length - validCount} CNC entry incomplete and won't be included.`;
+        warn.classList.remove('hidden');
+    } else {
+        warn.classList.add('hidden');
+    }
+
+    buildSummaryDOM();
+    document.getElementById('summaryThumbnailContainer').classList.add('hidden');
+    document.getElementById('btnGenerateImage').classList.remove('hidden');
+    document.getElementById('btnGenerateImage').textContent = 'Generate Image';
+    document.getElementById('btnGenerateImage').disabled = false;
+    document.getElementById('btnShareImage').classList.add('hidden');
+    document.getElementById('btnDownloadImage').classList.add('hidden');
+
+    summaryModal.classList.add('open');
+});
+
+document.getElementById('btnSummaryBack').addEventListener('click', () => summaryModal.classList.remove('open'));
+document.getElementById('btnEditEntry').addEventListener('click', () => summaryModal.classList.remove('open'));
+
+function buildSummaryDOM() {
+    const src = document.getElementById('summaryCanvasSource');
+    const validCnc = state.cncEntries.filter(isEntryValid);
+    const shiftName = state.shift === 'morning' ? 'Morning Shift' : 'Evening Shift';
+    
+    let cncHtml = '';
+    let totalCncHrs = 0;
+    if (validCnc.length === 0) {
+        cncHtml = `<div class="text-muted text-body-md">No CNC entries</div>`;
+    } else {
+        const compact = validCnc.length > 12;
+        validCnc.forEach((e, i) => {
+            totalCncHrs += e.productionHours;
+            const cycle = `${e.cycleMinutes || 0}m ${e.cycleSeconds || 0}s`;
+            if (compact) {
+                cncHtml += `<div class="text-body-md mb-2">${i+1}. ${e.operator} · ${e.machine} · Hex ${e.hex} · ${e.size} · S${e.side} · ${cycle} · ${e.partsCount} · <span style="font-weight:600">${e.productionHours.toFixed(2)} hrs</span></div>`;
+            } else {
+                cncHtml += `
+                <div class="mb-4">
+                    <div class="text-body-lg">${i+1}. ${e.operator} · ${e.machine} · Hex ${e.hex}</div>
+                    <div class="text-body-md text-muted">Size ${e.size} · Side ${e.side}</div>
+                    <div class="text-body-md tabular-nums">Cycle ${cycle} · Count ${e.partsCount} · <span style="font-weight:600; color:#0F1115">${e.productionHours.toFixed(2)} hrs</span></div>
+                </div>`;
+            }
+        });
+    }
+
+    const b1 = parseInt(state.burma.b1) || 0;
+    const b2 = parseInt(state.burma.b2) || 0;
+    const b3 = parseInt(state.burma.b3) || 0;
+    const totBurma = b1 + b2 + b3;
+
+    let repairHtml = '';
+    if (state.repair.person || state.repair.count || state.repair.note) {
+        repairHtml = `
+            <div class="png-divider"></div>
+            <div class="text-heading-md mb-2" style="font-weight:700;">Repair</div>
+            <div class="text-body-lg">${state.repair.person || 'Unknown'} · ${state.repair.count || 0} pcs</div>
+            <div class="text-body-md text-muted">${state.repair.note}</div>
+        `;
+    }
+
+    let notesHtml = '';
+    if (state.notes.trim()) {
+        notesHtml = `
+            <div class="png-divider"></div>
+            <div class="text-heading-md mb-2" style="font-weight:700;">Notes</div>
+            <div class="text-body-lg" style="white-space: pre-wrap;">${state.notes}</div>
+        `;
+    }
+
+    const dNow = new Date();
+    const timeStr = dNow.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
+
+    const html = `
+        <div class="text-display-xl" style="font-weight:700; margin-bottom: 8px;">Daily Production Summary</div>
+        <div class="text-body-lg text-muted">${formatDateStr(state.date)} · ${shiftName}</div>
+        <div class="png-divider"></div>
+        <div class="text-heading-md" style="font-weight:700; margin-bottom:16px;">CNC Production</div>
+        ${cncHtml}
+        <div class="png-row mt-4">
+            <div class="text-body-lg" style="font-weight:600;">Total CNC Hours</div>
+            <div class="text-display-lg tabular-nums" style="font-weight:700;">${totalCncHrs.toFixed(2)} hrs</div>
+        </div>
+        <div class="png-divider"></div>
+        <div class="text-heading-md" style="font-weight:700; margin-bottom:16px;">Burma Production</div>
+        <div class="png-row"><div class="text-body-lg text-muted">Burma 1</div><div class="text-body-lg tabular-nums">${b1}</div></div>
+        <div class="png-row"><div class="text-body-lg text-muted">Burma 2</div><div class="text-body-lg tabular-nums">${b2}</div></div>
+        <div class="png-row"><div class="text-body-lg text-muted">Burma 3</div><div class="text-body-lg tabular-nums">${b3}</div></div>
+        <div class="png-row mt-4">
+            <div class="text-body-lg" style="font-weight:600;">Total Burma</div>
+            <div class="text-display-lg tabular-nums" style="font-weight:700;">${totBurma.toLocaleString('en-IN')}</div>
+        </div>
+        ${repairHtml}
+        ${notesHtml}
+        <div class="mt-8 text-caption text-muted" style="text-align:right;">Generated ${formatDateStr(state.date)} · ${timeStr}</div>
+    `;
+
+    src.innerHTML = html;
+    
+    // Also render to UI replica inside the modal (scaled down via CSS transform if needed, but native HTML works fine)
+    document.getElementById('summaryUiReplica').innerHTML = html;
+}
+
+let generatedFile = null;
+
+document.getElementById('btnGenerateImage').addEventListener('click', async () => {
+    const btn = document.getElementById('btnGenerateImage');
+    btn.textContent = 'Generating...';
+    btn.disabled = true;
+
+    // Small delay to allow UI to render 'Generating...'
+    setTimeout(async () => {
+        try {
+            const srcNode = document.getElementById('summaryCanvasSource');
+            const canvas = await html2canvas(srcNode, {
+                scale: 2,
+                backgroundColor: '#FFFFFF',
+                useCORS: true,
+                windowWidth: 540
+            });
+            
+            canvas.toBlob((blob) => {
+                if(!blob) throw new Error("Canvas toBlob failed");
+                const fname = `production-summary-${state.date}.png`;
+                generatedFile = new File([blob], fname, { type: 'image/png' });
+                
+                const url = URL.createObjectURL(blob);
+                document.getElementById('summaryThumbnailImg').src = url;
+                
+                document.getElementById('summaryUiReplica').classList.add('hidden');
+                document.getElementById('summaryThumbnailContainer').classList.remove('hidden');
+                
+                btn.classList.add('hidden');
+                document.getElementById('btnShareImage').classList.remove('hidden');
+                document.getElementById('btnDownloadImage').classList.remove('hidden');
+            }, 'image/png');
+        } catch (e) {
+            console.error(e);
+            showToast('Couldn\'t generate image. Please try again.');
+            btn.textContent = 'Generate Image';
+            btn.disabled = false;
+        }
+    }, 150);
+});
+
+document.getElementById('btnShareImage').addEventListener('click', async () => {
+    if (!generatedFile) return;
+    
+    const plainText = `Production Summary ${formatDateStr(state.date)}\nTotal CNC: ${document.getElementById('actionTotalCnc').textContent}\nTotal Burma: ${document.getElementById('burmaFooterTotal').textContent}`;
+
+    if (navigator.canShare && navigator.canShare({ files: [generatedFile] })) {
+        try {
+            await navigator.share({
+                files: [generatedFile],
+                title: 'Production Summary',
+            });
+            showToast('Shared successfully!');
+        } catch (e) {
+            if (e.name !== 'AbortError') doFallbackShare(plainText);
+        }
+    } else {
+        doFallbackShare(plainText);
+    }
+});
+
+document.getElementById('btnDownloadImage').addEventListener('click', () => {
+    if (generatedFile) downloadFile(generatedFile);
+});
+
+function doFallbackShare(plainText) {
+    downloadFile(generatedFile);
+    window.location.href = `whatsapp://send?text=${encodeURIComponent(plainText)}`;
+    showToast('Image saved. Share it manually in WhatsApp.');
+}
+
+function downloadFile(file) {
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/**
+ * Global Utilities
+ */
+const toast = document.getElementById('toastMsg');
+let toastTimer = null;
+function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// Sticky Action Bar Shadow on Scroll
+window.addEventListener('scroll', () => {
+    const bar = document.getElementById('actionBar');
+    if (window.scrollY > 10) bar.classList.add('scrolled');
+    else bar.classList.remove('scrolled');
+}, {passive: true});
+
+// Init
+initDOM();
+
+</script>
+</body>
+</html>

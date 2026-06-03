@@ -1,0 +1,37 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cd app && npm run build",
+  "installCommand": "npm ci && cd app && npm ci",
+  "outputDirectory": "app/dist",
+  "functions": {
+    "api/append-production.ts": {
+      "memory": 1024,
+      "maxDuration": 30,
+      "includeFiles": "node_modules/googleapis/**"
+    },
+    "api/ping.ts": {
+      "memory": 256,
+      "maxDuration": 10
+    }
+  },
+  "headers": [
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/manifest.webmanifest",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "name": "production-entry-platform",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev:api": "tsx scripts/dev-api-server.ts",
+    "test:sheets": "tsx scripts/test-sheets-append.ts",
+    "test:sheets:clean": "tsx scripts/delete-test-sheets-entries.ts",
+    "test:deploy-api": "node scripts/test-deploy-api.mjs"
+  },
+  "dependencies": {
+    "@vercel/node": "^3.2.0",
+    "googleapis": "^144.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0"
+  }
+}

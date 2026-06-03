@@ -1,0 +1,182 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    min-height: 100%;
+    background-color: var(--bg-app);
+  }
+
+  body {
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+    font-family:
+      -apple-system, BlinkMacSystemFont, 'Segoe UI Variable', 'Segoe UI',
+      Roboto, 'Helvetica Neue', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    margin: 0;
+    padding: 0;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 17px;
+  }
+
+  input[type='number'] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .value-crossfade {
+    animation: value-crossfade 160ms ease-out;
+  }
+
+  .cnc-card-shell {
+    animation: cnc-card-enter 220ms var(--ease-standard);
+  }
+
+  .cnc-card-shell--exiting {
+    animation: cnc-card-exit 180ms ease-in forwards;
+  }
+
+  .toast-shell {
+    position: fixed;
+    left: 50%;
+    bottom: calc(72px + env(safe-area-inset-bottom) + 12px);
+    z-index: 90;
+    display: flex;
+    width: min(420px, calc(100% - 32px));
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 12px;
+    background: var(--text-primary);
+    color: var(--text-inverse);
+    padding: 12px 16px;
+    box-shadow: var(--shadow-lg);
+    font-size: 15px;
+    font-weight: 500;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-50%) translateY(20px);
+    transition:
+      opacity 180ms ease-out,
+      transform 180ms ease-out,
+      visibility 180ms ease-out;
+  }
+
+  .toast-shell--visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .summary-capture-host {
+    position: absolute;
+    top: -10000px;
+    left: 0;
+    width: 540px;
+    background: #fff;
+    pointer-events: none;
+  }
+
+  @keyframes value-crossfade {
+    from {
+      opacity: 0.35;
+      transform: translateY(2px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes cnc-card-enter {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes cnc-card-exit {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    to {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cnc-card-shell,
+    .cnc-card-shell--exiting {
+      animation: none;
+    }
+
+    .toast-shell {
+      transform: translateX(-50%);
+      transition: none;
+    }
+
+    .value-crossfade {
+      animation: none;
+    }
+
+    *,
+    ::before,
+    ::after {
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 1ms !important;
+    }
+  }
+}
