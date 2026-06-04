@@ -2,28 +2,36 @@ export type ProductionSheetsPayload = {
   submittedAt: string;
   productionDate: string;
   shift: string;
+
+  cncOperator: string;
+
   cncEntryCount: number;
   cncTotalHours: number;
   cncTotalSides: number;
+
   burma1Operator: string;
   burma1: number | null;
+
   burma2Operator: string;
   burma2: number | null;
+
   burma3Operator: string;
   burma3: number | null;
+
   burmaTotal: number;
+
   repairPerson: string;
   repairCount: number | null;
   repairNote: string;
+
   notes: string;
-  textSummary: string;
-  cncEntriesJson: string;
 };
 
 export const LOG_SHEET_HEADERS = [
   'Submitted At',
   'Production Date',
   'Shift',
+  'CNC Operator',
   'CNC Entries',
   'CNC Total Hours',
   'CNC Total Sides',
@@ -37,9 +45,7 @@ export const LOG_SHEET_HEADERS = [
   'Repair Person',
   'Repair Count',
   'Repair Note',
-  'Notes',
-  'Text Summary',
-  'CNC Details JSON',
+  'Notes'
 ] as const;
 
 export const DAILY_SHEET_HEADERS = [
@@ -62,22 +68,29 @@ function payloadToLogRow(payload: ProductionSheetsPayload): string[] {
     payload.submittedAt,
     payload.productionDate,
     payload.shift,
+
+    payload.cncOperator,
+
     String(payload.cncEntryCount),
     String(payload.cncTotalHours),
     String(payload.cncTotalSides),
+
     payload.burma1Operator,
     formatNullableNumber(payload.burma1),
+
     payload.burma2Operator,
     formatNullableNumber(payload.burma2),
+
     payload.burma3Operator,
     formatNullableNumber(payload.burma3),
+
     String(payload.burmaTotal),
+
     payload.repairPerson,
     formatNullableNumber(payload.repairCount),
+
     payload.repairNote,
     payload.notes,
-    payload.textSummary,
-    payload.cncEntriesJson,
   ];
 }
 
@@ -191,6 +204,48 @@ function parseSheetCount(value: string | undefined): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function normalizeSheetValueForKey(v: unknown): string {
+  if (v == null) return '';
+  if (typeof v === 'string') {
+    const s = v.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+      return s;
+    }
+    // Try common date string formats Sheets may return (e.g. '10/5/2025')
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+    return s;
+  }
+  if (typeof v === 'number' && Number.isFinite(v)) {
+    // Sheets/Excel serial date (recent dates have serial > ~44000)
+    if (v > 30000) {
+      // Epoch for Sheets serials is 1899-12-30; adjust for the 1900-02-29 phantom day (Excel bug)
+      let adj = v;
+      if (v > 60) adj = v - 1;
+      const excelEpoch = Date.UTC(1899, 11, 30);
+      const ms = Math.round(adj) * 86400000 + excelEpoch;
+      const dt = new Date(ms);
+      const y = dt.getUTCFullYear();
+      const m = String(dt.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(dt.getUTCDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+    return String(v);
+  }
+  if (v instanceof Date && !isNaN(v.getTime())) {
+    const y = v.getFullYear();
+    const m = String(v.getMonth() + 1).padStart(2, '0');
+    const day = String(v.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+  return String(v).trim();
+}
+
 function quoteSheetTab(tabName: string): string {
   return `'${tabName.replace(/'/g, "''")}'`;
 }
@@ -249,22 +304,39 @@ async function ensureHeaders(
   const tab = quoteSheetTab(tabName);
   const lastColumn = columnLetter(headers.length);
   const headerRange = `${tab}!A1:${lastColumn}1`;
+  // Fetch a bit wider to detect stale extra columns from prior schema (e.g. removed columns)
+  const wideRange = `${tab}!A1:Z1`;
   const existing = await sheets.spreadsheets.values.get({
     spreadsheetId: spreadsheetIdValue,
-    range: headerRange,
+    range: wideRange,
   });
 
-  const firstCell = existing.data.values?.[0]?.[0];
-  if (firstCell === headers[0]) {
+  const current = existing.data.values?.[0] ?? [];
+  const expected = Array.from(headers);
+  const prefixMatches = expected.every((h, i) => current[i] === h);
+  const noExtraNonEmpty = current.slice(expected.length).every((v) => !v || String(v).trim() === '');
+  if (prefixMatches && noExtraNonEmpty) {
     return;
   }
 
+  // Write the current headers (overwrites A1 onward for our count)
   await sheets.spreadsheets.values.update({
     spreadsheetId: spreadsheetIdValue,
     range: `${tab}!A1`,
     valueInputOption: 'RAW',
     requestBody: {
-      values: [Array.from(headers)],
+      values: [expected],
+    },
+  });
+
+  // Clear any cells beyond our current header length (removes stale labels e.g. after removing a middle column)
+  const extraStart = columnLetter(expected.length + 1);
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: spreadsheetIdValue,
+    range: `${tab}!${extraStart}1:Z1`,
+    valueInputOption: 'RAW',
+    requestBody: {
+      values: [Array.from({ length: 26 - expected.length }, () => '')],
     },
   });
 }
@@ -279,10 +351,11 @@ async function appendLogRow(
   await ensureHeaders(sheets, spreadsheetIdValue, tabName, LOG_SHEET_HEADERS);
 
   const tab = quoteSheetTab(tabName);
+  const lastColumn = columnLetter(LOG_SHEET_HEADERS.length);
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: spreadsheetIdValue,
-    range: `${tab}!A:S`,
+    range: `${tab}!A:${lastColumn}`,
     valueInputOption: 'USER_ENTERED',
     insertDataOption: 'INSERT_ROWS',
     requestBody: {
@@ -293,17 +366,17 @@ async function appendLogRow(
 
 function buildDailyRow(
   payload: ProductionSheetsPayload,
-  existing: string[] | undefined,
-): string[] {
+  existing: unknown[] | undefined,
+): unknown[] {
   if (!existing) {
     return [
       payload.productionDate,
       payload.shift,
-      String(payload.cncTotalHours),
-      String(payload.cncTotalSides),
-      String(payload.burmaTotal),
-      String(payload.cncEntryCount),
-      '1',
+      payload.cncTotalHours,
+      payload.cncTotalSides,
+      payload.burmaTotal,
+      payload.cncEntryCount,
+      1,
       payload.submittedAt,
     ];
   }
@@ -311,11 +384,11 @@ function buildDailyRow(
   return [
     payload.productionDate,
     payload.shift,
-    String(parseSheetNumber(existing[2]) + payload.cncTotalHours),
-    String(parseSheetNumber(existing[3]) + payload.cncTotalSides),
-    String(parseSheetNumber(existing[4]) + payload.burmaTotal),
-    String(parseSheetCount(existing[5]) + payload.cncEntryCount),
-    String(parseSheetCount(existing[6]) + 1),
+    parseSheetNumber(String(existing[2])) + payload.cncTotalHours,
+    parseSheetNumber(String(existing[3])) + payload.cncTotalSides,
+    parseSheetNumber(String(existing[4])) + payload.burmaTotal,
+    parseSheetCount(String(existing[5])) + payload.cncEntryCount,
+    parseSheetCount(String(existing[6])) + 1,
     payload.submittedAt,
   ];
 }
@@ -337,10 +410,11 @@ async function upsertDailyTotals(
   });
 
   const rows = existingRows.data.values ?? [];
-  const matchIndex = rows.findIndex(
-    (row) =>
-      row[0] === payload.productionDate && row[1] === payload.shift,
-  );
+  const matchIndex = rows.findIndex((row) => {
+    const dateKey = normalizeSheetValueForKey(row ? row[0] : null);
+    const shiftKey = normalizeSheetValueForKey(row ? row[1] : null);
+    return dateKey === payload.productionDate && shiftKey === payload.shift;
+  });
 
   const dailyRow = buildDailyRow(
     payload,
@@ -352,7 +426,7 @@ async function upsertDailyTotals(
     await sheets.spreadsheets.values.update({
       spreadsheetId: spreadsheetIdValue,
       range: `${tab}!A${sheetRowNumber}:H${sheetRowNumber}`,
-      valueInputOption: 'USER_ENTERED',
+      valueInputOption: 'RAW',
       requestBody: {
         values: [dailyRow],
       },
@@ -363,7 +437,7 @@ async function upsertDailyTotals(
   await sheets.spreadsheets.values.append({
     spreadsheetId: spreadsheetIdValue,
     range: `${tab}!A:H`,
-    valueInputOption: 'USER_ENTERED',
+    valueInputOption: 'RAW',
     insertDataOption: 'INSERT_ROWS',
     requestBody: {
       values: [dailyRow],

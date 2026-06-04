@@ -26,6 +26,7 @@ const payload = {
   submittedAt: now.toISOString(),
   productionDate: now.toISOString().slice(0, 10),
   shift: 'morning',
+  cncOperator: 'Test',
   cncEntryCount: 0,
   cncTotalHours: 0,
   cncTotalSides: 0,
@@ -40,8 +41,6 @@ const payload = {
   repairCount: null,
   repairNote: '',
   notes: 'deploy API test — safe to delete',
-  textSummary: 'deploy API connectivity test',
-  cncEntriesJson: '[]',
 };
 
 console.log('POST', url);

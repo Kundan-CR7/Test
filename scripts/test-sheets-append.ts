@@ -71,6 +71,7 @@ const payload = {
   submittedAt: now.toISOString(),
   productionDate: now.toISOString().slice(0, 10),
   shift: 'morning',
+  cncOperator: 'Test',
   cncEntryCount: 1,
   cncTotalHours: 1.5,
   cncTotalSides: 10,
@@ -85,8 +86,6 @@ const payload = {
   repairCount: null,
   repairNote: '',
   notes: 'API test row — safe to delete',
-  textSummary: 'API connectivity test',
-  cncEntriesJson: '[]',
 };
 
 console.log('Writing test row to Google Sheets...');

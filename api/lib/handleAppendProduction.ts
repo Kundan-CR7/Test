@@ -38,15 +38,13 @@ export function parsePayload(body: unknown): ProductionSheetsPayload | null {
   const submittedAt = readString(body.submittedAt);
   const productionDate = readString(body.productionDate);
   const shift = readString(body.shift);
-  const textSummary = readString(body.textSummary);
-  const cncEntriesJson = readString(body.cncEntriesJson);
+  const cncOperator = readString(body.cncOperator);
 
   if (
     submittedAt === null ||
     productionDate === null ||
     shift === null ||
-    textSummary === null ||
-    cncEntriesJson === null
+    cncOperator === null
   ) {
     return null;
   }
@@ -69,22 +67,29 @@ export function parsePayload(body: unknown): ProductionSheetsPayload | null {
     submittedAt,
     productionDate,
     shift,
+
+    cncOperator,
+
     cncEntryCount,
     cncTotalHours,
     cncTotalSides,
+
     burma1Operator: readString(body.burma1Operator) ?? '',
     burma1: readNullableNumber(body.burma1),
+
     burma2Operator: readString(body.burma2Operator) ?? '',
     burma2: readNullableNumber(body.burma2),
+
     burma3Operator: readString(body.burma3Operator) ?? '',
     burma3: readNullableNumber(body.burma3),
+
     burmaTotal,
+
     repairPerson: readString(body.repairPerson) ?? '',
     repairCount: readNullableNumber(body.repairCount),
+
     repairNote: readString(body.repairNote) ?? '',
     notes: readString(body.notes) ?? '',
-    textSummary,
-    cncEntriesJson,
   };
 }
 

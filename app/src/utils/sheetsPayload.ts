@@ -5,7 +5,6 @@ import {
   totalBurma,
   validCncEntries,
 } from '../state/selectors';
-import { buildTextSummary } from './textSummary';
 
 export type SheetsCncEntryRow = {
   operator: string;
@@ -25,22 +24,29 @@ export type ProductionSheetsPayload = {
   submittedAt: string;
   productionDate: string;
   shift: string;
+
+  cncOperator: string;
+
   cncEntryCount: number;
   cncTotalHours: number;
   cncTotalSides: number;
+
   burma1Operator: string;
   burma1: number | null;
+
   burma2Operator: string;
   burma2: number | null;
+
   burma3Operator: string;
   burma3: number | null;
+
   burmaTotal: number;
+
   repairPerson: string;
   repairCount: number | null;
   repairNote: string;
+
   notes: string;
-  textSummary: string;
-  cncEntriesJson: string;
 };
 
 export function buildProductionSheetsPayload(
@@ -63,24 +69,31 @@ export function buildProductionSheetsPayload(
   }));
 
   return {
-    submittedAt: generatedAt.toISOString(),
-    productionDate: state.date,
-    shift: state.shift,
-    cncEntryCount: totals.entries,
-    cncTotalHours: totals.hours,
-    cncTotalSides: totals.sides,
-    burma1Operator: state.burma.operators.burma1,
-    burma1: state.burma.burma1,
-    burma2Operator: state.burma.operators.burma2,
-    burma2: state.burma.burma2,
-    burma3Operator: state.burma.operators.burma3,
-    burma3: state.burma.burma3,
-    burmaTotal: totalBurma(state),
-    repairPerson: state.repair.person,
-    repairCount: state.repair.count,
-    repairNote: state.repair.note,
-    notes: state.notes,
-    textSummary: buildTextSummary(state, generatedAt),
-    cncEntriesJson: JSON.stringify(cncRows),
-  };
+  submittedAt: generatedAt.toISOString(),
+  productionDate: state.date,
+  shift: state.shift,
+
+  cncOperator: cncRows[0]?.operator ?? '',
+
+  cncEntryCount: totals.entries,
+  cncTotalHours: totals.hours,
+  cncTotalSides: totals.sides,
+
+  burma1Operator: state.burma.operators.burma1,
+  burma1: state.burma.burma1,
+
+  burma2Operator: state.burma.operators.burma2,
+  burma2: state.burma.burma2,
+
+  burma3Operator: state.burma.operators.burma3,
+  burma3: state.burma.burma3,
+
+  burmaTotal: totalBurma(state),
+
+  repairPerson: state.repair.person,
+  repairCount: state.repair.count,
+  repairNote: state.repair.note,
+
+  notes: state.notes,
+};
 }

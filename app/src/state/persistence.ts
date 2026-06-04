@@ -5,7 +5,7 @@ import type { ProductionEntryState } from './types';
 export const KEY_CUSTOM_PEOPLE = 'productionEntry.v1.customPeople';
 export const KEY_DRAFT = 'productionEntry.v1.draft';
 export const KEY_PREVIEW_LIMIT = 'productionEntry.v1.previewLimit';
-export const PREVIEW_DAILY_LIMIT = 3;
+export const PREVIEW_DAILY_LIMIT = 1000;
 
 export type SaveDraftResult =
   | { ok: true }

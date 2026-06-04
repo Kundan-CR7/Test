@@ -21,7 +21,6 @@ var LOG_HEADERS = [
   'Repair Count',
   'Repair Note',
   'Notes',
-  'Text Summary',
   'CNC Details JSON',
 ];
 
@@ -50,7 +49,12 @@ function jsonResponse_(payload) {
 }
 
 function ensureHeaders_(sheet, headers) {
-  if (sheet.getLastRow() === 0 || sheet.getRange(1, 1).getValue() !== headers[0]) {
+  var first = sheet.getRange(1, 1).getValue();
+  var lastHeaderCell = sheet.getRange(1, headers.length).getValue();
+  var expectedLast = headers[headers.length - 1];
+  if (sheet.getLastRow() === 0 || first !== headers[0] || lastHeaderCell !== expectedLast) {
+    // Clear a wide header area then set to remove any stale column headers from schema changes
+    sheet.getRange(1, 1, 1, 26).setValues([Array(26).fill('')]);
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
   }
 }
@@ -71,6 +75,39 @@ function parseNumber_(value) {
 function parseCount_(value) {
   var parsed = parseInt(value, 10);
   return isNaN(parsed) ? 0 : parsed;
+}
+
+function normalizeKey_(v) {
+  if (v === null || v === undefined) return '';
+  if (v instanceof Date && !isNaN(v.getTime())) {
+    var y = v.getFullYear();
+    var m = ('0' + (v.getMonth() + 1)).slice(-2);
+    var d = ('0' + v.getDate()).slice(-2);
+    return y + '-' + m + '-' + d;
+  }
+  if (typeof v === 'string') {
+    var s = v.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    var d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      var y = d.getFullYear();
+      var m = ('0' + (d.getMonth() + 1)).slice(-2);
+      var dd = ('0' + d.getDate()).slice(-2);
+      return y + '-' + m + '-' + dd;
+    }
+    return s;
+  }
+  if (typeof v === 'number' && v > 30000) {
+    var adj = v;
+    if (v > 60) adj = v - 1;
+    var epoch = Date.UTC(1899, 11, 30);
+    var dt = new Date(epoch + Math.round(adj) * 86400000);
+    var y = dt.getUTCFullYear();
+    var m = ('0' + (dt.getUTCMonth() + 1)).slice(-2);
+    var dd = ('0' + dt.getUTCDate()).slice(-2);
+    return y + '-' + m + '-' + dd;
+  }
+  return String(v).trim();
 }
 
 function payloadToLogRow_(payload) {
@@ -96,7 +133,6 @@ function payloadToLogRow_(payload) {
     num(payload.repairCount),
     payload.repairNote || '',
     payload.notes || '',
-    payload.textSummary,
     payload.cncEntriesJson,
   ];
 }
@@ -104,13 +140,17 @@ function payloadToLogRow_(payload) {
 function upsertDaily_(dailySheet, payload) {
   ensureHeaders_(dailySheet, DAILY_HEADERS);
 
+  // Force first two columns (date, shift) to plain text format so they read back
+  // as the literal strings we write (helps matching across runs).
+  dailySheet.getRange(1, 1, Math.max(dailySheet.getLastRow(), 1000), 2).setNumberFormat('@');
+
   var lastRow = dailySheet.getLastRow();
   var matchRow = -1;
 
   if (lastRow > 1) {
     var dates = dailySheet.getRange(2, 1, lastRow - 1, 2).getValues();
     for (var i = 0; i < dates.length; i++) {
-      if (dates[i][0] === payload.productionDate && dates[i][1] === payload.shift) {
+      if (normalizeKey_(dates[i][0]) === payload.productionDate && normalizeKey_(dates[i][1]) === payload.shift) {
         matchRow = i + 2;
         break;
       }

@@ -61,13 +61,8 @@ function quoteSheetTab(tabName: string): string {
 }
 
 function isTestLogRow(row: string[]): boolean {
-  const notes = row[16] ?? '';
-  const textSummary = row[17] ?? '';
-
-  return (
-    notes.includes('API test row') ||
-    textSummary.includes('API connectivity test')
-  );
+  const notes = row[17] ?? '';
+  return notes.includes('API test row');
 }
 
 function isTestDailyRow(row: string[]): boolean {
@@ -81,8 +76,8 @@ function isTestDailyRow(row: string[]): boolean {
     hours === '1.5' &&
     sides === '10' &&
     burma === '5' &&
-    entries === '1' &&
-    submissions === '1'
+    entries === '1'
+    // note: submissions may be >1 if the test was run multiple times before clean
   );
 }
 
@@ -168,7 +163,7 @@ try {
   const logSheetId = await getSheetId(sheets, spreadsheetId, logTab);
   const logValues = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${quoteSheetTab(logTab)}!A2:S`,
+    range: `${quoteSheetTab(logTab)}!A2:R`,
   });
 
   const logRows = logValues.data.values ?? [];
@@ -202,5 +197,5 @@ try {
 
 console.log(`Done. Removed ${logDeleted} row(s) from Logs, ${dailyDeleted} row(s) from Daily.`);
 if (logDeleted === 0 && dailyDeleted === 0) {
-  console.log('No test rows matched. Test logs contain "API test row" or "API connectivity test".');
+  console.log('No test rows matched. Test logs contain "API test row" in the Notes column.');
 }

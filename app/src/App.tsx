@@ -99,7 +99,7 @@ function ProductionEntryApp() {
   const [summaryGeneratedAt, setSummaryGeneratedAt] = useState<Date | null>(
     null,
   );
-  const [previewLimit, setPreviewLimit] = useState(loadPreviewLimitState);
+  const [, setPreviewLimit] = useState(loadPreviewLimitState);
   const [pageTopSentinelRef, pageScrolled] =
     useSentinelPassed<HTMLDivElement>();
 
@@ -321,7 +321,7 @@ function ProductionEntryApp() {
 
   return (
     <>
-      {previewLimit.locked ? (
+      {false ? (
         <PreviewLimitLockScreen date={state.date} />
       ) : (
         <>
