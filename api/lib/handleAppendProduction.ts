@@ -1,4 +1,9 @@
-import { appendProductionRow, type ProductionSheetsPayload } from './sheets.js';
+import {
+  appendProductionFromRawRecords,
+  appendProductionRow,
+  type ProductionLogRow,
+  type ProductionSheetsPayload,
+} from './sheets.js';
 
 export type AppendProductionResult = {
   status: number;
@@ -93,6 +98,37 @@ export function parsePayload(body: unknown): ProductionSheetsPayload | null {
   };
 }
 
+export function parseRawRecordsPayload(body: unknown): {
+  records: ProductionLogRow[];
+  submittedAt: string;
+  productionDate: string;
+  shift: string;
+} | null {
+  if (!isRecord(body)) return null;
+
+  const recordsRaw = (body as any).records;
+  if (!Array.isArray(recordsRaw) || recordsRaw.length === 0) {
+    return null;
+  }
+
+  const records = recordsRaw as ProductionLogRow[];
+
+  const submittedAt = readString(body.submittedAt) || new Date().toISOString();
+  const productionDate = readString(body.productionDate);
+  const shift = readString(body.shift) || 'morning';
+
+  if (productionDate === null) {
+    return null;
+  }
+
+  return {
+    records,
+    submittedAt,
+    productionDate,
+    shift,
+  };
+}
+
 function expectedApiKey(): string | null {
   const key = process.env.SUBMIT_API_KEY?.trim();
   return key ? key : null;
@@ -124,6 +160,24 @@ export async function handleAppendProduction(
     return { status: 401, body: { ok: false, error: 'unauthorized' } };
   }
 
+  // Prefer new raw per-record payload (multiple rows, new schema to Logs_Raw)
+  const raw = parseRawRecordsPayload(body);
+  if (raw !== null) {
+    try {
+      await appendProductionFromRawRecords(raw.records, {
+        submittedAt: raw.submittedAt,
+        productionDate: raw.productionDate,
+        shift: raw.shift,
+      });
+      return { status: 200, body: { ok: true } };
+    } catch (error) {
+      const errorCode = mapSheetsError(error);
+      console.error('append-production (raw) failed', errorCode, error);
+      return { status: 500, body: { ok: false, error: errorCode } };
+    }
+  }
+
+  // Legacy single-summary payload path (writes to original Logs tab)
   const payload = parsePayload(body);
   if (payload === null) {
     return { status: 400, body: { ok: false, error: 'invalid_payload' } };

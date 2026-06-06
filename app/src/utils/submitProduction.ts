@@ -1,5 +1,5 @@
 import type { ProductionEntryState } from '../state/types';
-import { buildProductionSheetsPayload } from './sheetsPayload';
+import { buildProductionLogRows } from './sheetsPayload';
 
 export type SubmitProductionResult =
   | { status: 'ok' }
@@ -54,7 +54,7 @@ export async function submitProductionToSheets(
     return { status: 'disabled' };
   }
 
-  const payload = buildProductionSheetsPayload(state, generatedAt);
+  const records = buildProductionLogRows(state, generatedAt);
 
   try {
     const response = await fetch(submitApiUrl(), {
@@ -63,7 +63,13 @@ export async function submitProductionToSheets(
         'Content-Type': 'application/json',
         'X-API-Key': apiKey,
       },
-      body: JSON.stringify({ apiKey, ...payload }),
+      body: JSON.stringify({
+        apiKey,
+        submittedAt: generatedAt.toISOString(),
+        productionDate: state.date,
+        shift: state.shift,
+        records,
+      }),
     });
 
     const body = (await response.json().catch(() => ({}))) as {

@@ -102,6 +102,32 @@ export function ShareActions({
       const thumbnailUrl = URL.createObjectURL(file);
       thumbnailUrlRef.current = thumbnailUrl;
       setActionState({ status: 'ready', file, thumbnailUrl });
+
+      // Append to Google Sheets on Generate Image (not on share), as requested.
+      const sheetsResult = await submitProductionToSheets(state, generatedAt);
+      if (!mountedRef.current) return;
+
+      if (sheetsResult.status === 'disabled') {
+        showToast({
+          message:
+            'Image generated, but sheet sync is off. Set VITE_SUBMIT_API_KEY on Vercel (same as SUBMIT_API_KEY) and redeploy.',
+          durationMs: 6000,
+        });
+      } else if (sheetsResult.status === 'unreachable') {
+        showToast({
+          message:
+            'Image generated, but sheet API not reachable. Check your site URL and /api/append-production.',
+          durationMs: 6000,
+        });
+      } else if (sheetsResult.status === 'failed') {
+        showToast({
+          message: `Image generated. ${sheetsErrorMessage(
+            sheetsResult.error,
+            sheetsResult.httpStatus,
+          )}`,
+          durationMs: 7000,
+        });
+      }
     } catch {
       if (!mountedRef.current) return;
       setActionState({ status: 'idle' });
@@ -134,33 +160,6 @@ export function ShareActions({
           message: 'Image saved to your phone. Share it manually in the group.',
           durationMs: 4500,
         });
-      }
-
-      if (result === 'shared' || result === 'downloaded') {
-        const sheetsResult = await submitProductionToSheets(state, generatedAt);
-        if (!mountedRef.current) return;
-
-        if (sheetsResult.status === 'disabled') {
-          showToast({
-            message:
-              'Shared, but sheet sync is off. Set VITE_SUBMIT_API_KEY on Vercel (same as SUBMIT_API_KEY) and redeploy.',
-            durationMs: 6000,
-          });
-        } else if (sheetsResult.status === 'unreachable') {
-          showToast({
-            message:
-              'Shared, but sheet API not reachable. Check your site URL and /api/append-production.',
-            durationMs: 6000,
-          });
-        } else if (sheetsResult.status === 'failed') {
-          showToast({
-            message: `Shared. ${sheetsErrorMessage(
-              sheetsResult.error,
-              sheetsResult.httpStatus,
-            )}`,
-            durationMs: 7000,
-          });
-        }
       }
     } catch {
       if (!mountedRef.current) return;
@@ -242,13 +241,15 @@ export function ShareActions({
         </>
       )}
 
-      <button
-        type="button"
-        onClick={onEdit}
-        className={`${secondaryButtonClass} mt-2`}
-      >
-        Edit Entry
-      </button>
+      {!isReady && (
+        <button
+          type="button"
+          onClick={onEdit}
+          className={`${secondaryButtonClass} mt-2`}
+        >
+          Edit Entry
+        </button>
+      )}
     </div>
   );
 }

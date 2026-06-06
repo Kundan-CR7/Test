@@ -454,3 +454,288 @@ export async function appendProductionRow(payload: ProductionSheetsPayload) {
   await appendLogRow(sheets, spreadsheetIdValue, logTab, payload);
   await upsertDailyTotals(sheets, spreadsheetIdValue, dailyTab, payload);
 }
+
+// =============================================================================
+// Raw per-record logging to separate tab (Logs_Raw) + Daily derivation from raw rows
+// =============================================================================
+
+export const RAW_LOG_HEADERS = [
+  "Date",
+  "Month",
+  "Shift",
+  "MachineID",
+  "Operator",
+  "Part_ID",
+  "PartSide",
+  "IdealCycle_sec",
+  "MachineCycle_sec",
+  "TotalParts",
+  "ShiftStart",
+  "ShiftEnd",
+  "Downtime_PowerCut_min",
+  "Downtime_MaterialShortage_min",
+  "Downtime_MachineBreakdown/setting_min",
+  "Downtime_Others_min",
+  "TotalDowntime_min",
+  "DowntimeReason",
+  "Notes",
+  "PlannedTime_min",
+  "RunTime_min",
+  "MachineRuntime_min",
+  "IdealMachineTime_min",
+  "CycleDiff_pct",
+  "TimeFlag",
+  "Availability_pct",
+  "Performance_pct",
+  "Quality_pct",
+  "OEE_like",
+  "Parts_per_Hour",
+  "TotalProduction_hr"
+] as const;
+
+export type ProductionLogRow = {
+  [K in typeof RAW_LOG_HEADERS[number]]: string | number | null;
+};
+
+function rawLogTabName(): string {
+  return (
+    process.env.GOOGLE_SHEET_RAW_LOG_TAB_NAME?.trim() ||
+    'Logs_Raw'
+  );
+}
+
+function formatShiftTime(value: unknown): string {
+  if (value == null || value === '') return '';
+  if (typeof value === 'string') {
+    const v = value.trim();
+    if (v.includes('-') || v.includes('/')) {
+      // Full datetime string (e.g. "09-05-2026 8:30" for Burma/Repair Shift* per historical).
+      // Keep as-is (pre-formatted by builder with correct date + non-padded hour for single-digit).
+      return v;
+    }
+    // Pure time normalization for CNC etc: "8:30", "08:30", "19:00:00" -> "08:30" (padded hour)
+    const m = v.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+    if (m) {
+      const h = m[1].padStart(2, '0');
+      const min = m[2];
+      return `${h}:${min}`;
+    }
+    // Try to extract time from a full datetime-like string
+    const dt = v.match(/(\d{1,2}):(\d{2})/);
+    if (dt) {
+      const h = dt[1].padStart(2, '0');
+      const min = dt[2];
+      return `${h}:${min}`;
+    }
+    return v;
+  }
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    const h = String(value.getHours()).padStart(2, '0');
+    const m = String(value.getMinutes()).padStart(2, '0');
+    return `${h}:${m}`;
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    // Handle Excel/Sheets time serial fraction (e.g. 0.7916666667 ≈ 19:00)
+    const fraction = value - Math.floor(value);
+    const totalMinutes = Math.round(fraction * 24 * 60);
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  }
+  return String(value);
+}
+
+function rawRowToValues(row: ProductionLogRow): (string | number | Date)[] {
+  const dateLikeFields = new Set([
+    'Date', 'Month', 'ShiftStart', 'ShiftEnd'
+  ]);
+  return RAW_LOG_HEADERS.map((header, index) => {
+    let value: any = (row as any)[header];
+
+    if (header === 'Date') {
+      value = (row as any).Date || value || '';
+    }
+
+    if (value === null || value === undefined || value === '') {
+      return '';
+    }
+
+    if (dateLikeFields.has(header)) {
+      if (header === 'ShiftStart' || header === 'ShiftEnd') {
+        value = formatShiftTime(value);
+        return "'" + value;  // prefix ' to force text in Google Sheets (prevents auto date parsing to serial)
+      } else if (header === 'Date' || header === 'Month') {
+        value = String(value);
+        return "'" + value;  // prefix ' to force text (prevents serials)
+      } else {
+        value = String(value);
+      }
+    }
+    return value;
+  });
+}
+
+async function appendRawLogRows(
+  sheets: SheetsClient,
+  spreadsheetIdValue: string,
+  records: ProductionLogRow[],
+) {
+  if (!records || records.length === 0) return;
+
+  const tabName = rawLogTabName();
+  await ensureSheetTab(sheets, spreadsheetIdValue, tabName);
+  await ensureHeaders(sheets, spreadsheetIdValue, tabName, RAW_LOG_HEADERS);
+
+  const tab = quoteSheetTab(tabName);
+  const lastColumn = columnLetter(RAW_LOG_HEADERS.length);
+
+  const values = records.map((r) => rawRowToValues(r));
+
+  // Log the final row array(s) and verify formatting (as required)
+  console.log('=== Final raw production log row arrays (exact order for Logs_Raw) ===');
+  console.log('Number of rows:', values.length);
+  if (values.length > 0) {
+    console.log('First row array:', values[0]);
+    const first = values[0];
+    // Verify key fields are strings in expected format (not serial numbers)
+    console.log('Verification:');
+    console.log('  Date[0]:', first[0], 'typeof:', typeof first[0]);
+    console.log('  Month[1]:', first[1], 'typeof:', typeof first[1]);
+    console.log('  Shift[2]:', first[2], 'typeof:', typeof first[2]);
+    console.log('  ShiftStart[10]:', first[10], 'typeof:', typeof first[10]);
+    console.log('  ShiftEnd[11]:', first[11], 'typeof:', typeof first[11]);
+    // Expected example check (will log actual)
+    console.log('  (Expected example format: Date="06-06-2026", Month="2026-06", Shift="Day", ShiftStart="06-06-2026 8:30", ShiftEnd="06-06-2026 19:00" — consistent DD-MM-YYYY HH:MM for ALL row types)');
+  }
+  if (values.length > 1) {
+    console.log('Second row array (sample):', values[1]);
+  }
+
+  // TEMPORARY VERIFICATION LOGGING (requested)
+  // Log one CNC, one Burma, one Repair to confirm string types for ShiftStart/ShiftEnd/Date/Month
+  // before the append. This shows what the builder produced (and what will be forced to text below).
+  let loggedCNC = false;
+  let loggedBurma = false;
+  let loggedRepair = false;
+  records.forEach((rec: any) => {
+    const mid = String(rec.MachineID || '');
+    const ss = rec.ShiftStart;
+    const se = rec.ShiftEnd;
+    const d = rec.Date;
+    const mo = rec.Month;
+    let label = '';
+    if (!loggedCNC && mid.startsWith('M')) {
+      label = 'CNC'; loggedCNC = true;
+    } else if (!loggedBurma && mid.startsWith('B')) {
+      label = 'Burma'; loggedBurma = true;
+    } else if (!loggedRepair && mid === 'Repair') {
+      label = 'Repair'; loggedRepair = true;
+    }
+    if (label) {
+      console.log(`--- TEMP Shift verification for ${label} (machineId=${mid}) ---`);
+      console.log({
+        machineId: mid,
+        shiftStart: ss,
+        shiftEnd: se,
+        shiftStartType: typeof ss,
+        shiftEndType: typeof se
+      });
+      console.log(`--- TEMP Date/Month verification for ${label} (machineId=${mid}) ---`);
+      console.log({
+        date: d,
+        dateType: typeof d,
+        month: mo,
+        monthType: typeof mo
+      });
+    }
+  });
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: spreadsheetIdValue,
+    range: `${tab}!A:${lastColumn}`,
+    valueInputOption: 'USER_ENTERED',
+    insertDataOption: 'INSERT_ROWS',
+    requestBody: {
+      values,
+    },
+  });
+}
+
+type RawDailyMetrics = {
+  cncEntryCount: number;
+  cncTotalHours: number;
+  cncTotalSides: number;
+  burmaTotal: number;
+};
+
+function computeDailyMetricsFromRawRecords(records: ProductionLogRow[]): RawDailyMetrics {
+  let cncEntryCount = 0;
+  let cncTotalSides = 0;
+  let cncTotalHours = 0;
+  let burmaTotal = 0;
+
+  for (const rec of records) {
+    const entryType = String((rec as any).EntryType || '').toUpperCase();
+    const machineId = String((rec as any).MachineID || '');
+    const totalParts = Number((rec as any).TotalParts || 0);
+    const prodHours = Number((rec as any).TotalProduction_hr || 0);
+
+    const isCnc = entryType === 'CNC' || /^M[1-8]$/.test(machineId);
+    const isBurma = entryType === 'BURMA' || /^B[1-3]$/.test(machineId);
+
+    if (isCnc) {
+      cncEntryCount += 1;
+      cncTotalSides += totalParts;
+      cncTotalHours += prodHours;
+    } else if (isBurma) {
+      burmaTotal += totalParts;
+    }
+    // Repair rows contribute to neither main daily rollup (consistent with prior behavior)
+  }
+
+  return {
+    cncEntryCount,
+    cncTotalHours: Math.round(cncTotalHours * 100) / 100,
+    cncTotalSides,
+    burmaTotal,
+  };
+}
+
+export async function appendProductionFromRawRecords(
+  records: ProductionLogRow[],
+  meta: { submittedAt: string; productionDate: string; shift: string },
+) {
+  const sheets = await getSheetsClient();
+  const spreadsheetIdValue = spreadsheetId();
+  const dailyTab = dailyTabName();
+
+  // 1. Write raw per-record rows to the dedicated raw tab (never touches current Logs)
+  await appendRawLogRows(sheets, spreadsheetIdValue, records);
+
+  // 2. Derive Daily metrics from the expanded raw rows and upsert (keeps Daily behavior)
+  const metrics = computeDailyMetricsFromRawRecords(records);
+
+  // Construct a minimal object compatible with existing upsertDailyTotals / buildDailyRow
+  const forDaily: ProductionSheetsPayload = {
+    submittedAt: meta.submittedAt,
+    productionDate: meta.productionDate,
+    shift: meta.shift,
+    cncOperator: '',
+    cncEntryCount: metrics.cncEntryCount,
+    cncTotalHours: metrics.cncTotalHours,
+    cncTotalSides: metrics.cncTotalSides,
+    burma1Operator: '',
+    burma1: null,
+    burma2Operator: '',
+    burma2: null,
+    burma3Operator: '',
+    burma3: null,
+    burmaTotal: metrics.burmaTotal,
+    repairPerson: '',
+    repairCount: null,
+    repairNote: '',
+    notes: '',
+  };
+
+  await upsertDailyTotals(sheets, spreadsheetIdValue, dailyTab, forDaily);
+}

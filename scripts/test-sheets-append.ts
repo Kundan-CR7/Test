@@ -1,7 +1,10 @@
 import { createPrivateKey } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { appendProductionRow } from '../api/lib/sheets';
+import {
+  appendProductionFromRawRecords,
+  type ProductionLogRow,
+} from '../api/lib/sheets';
 
 function loadEnvFile(path: string) {
   if (!existsSync(path)) return;
@@ -67,31 +70,198 @@ try {
 }
 
 const now = new Date();
-const payload = {
-  submittedAt: now.toISOString(),
-  productionDate: now.toISOString().slice(0, 10),
-  shift: 'morning',
-  cncOperator: 'Test',
-  cncEntryCount: 1,
-  cncTotalHours: 1.5,
-  cncTotalSides: 10,
-  burma1Operator: 'Test',
-  burma1: 5,
-  burma2Operator: '',
-  burma2: null,
-  burma3Operator: '',
-  burma3: null,
-  burmaTotal: 5,
-  repairPerson: '',
-  repairCount: null,
-  repairNote: '',
-  notes: 'API test row — safe to delete',
-};
+const submittedAt = now.toISOString();
+const productionDate = now.toISOString().slice(0, 10);
+const shift = 'morning';
+const notes = 'API raw multi-record test — safe to delete (new Logs_Raw path)';
 
-console.log('Writing test row to Google Sheets...');
-console.log('Log tab:', process.env.GOOGLE_SHEET_LOG_TAB_NAME || 'Logs');
-console.log('Daily tab:', process.env.GOOGLE_SHEET_DAILY_TAB_NAME || 'Daily');
+// Example: 2 CNC + 2 Burma + 1 Repair → should produce 5 rows in Logs_Raw
+const formattedDate = '06-06-2026'; // DD-MM-YYYY
+const formattedMonth = '2026-06';
+const formattedShift = 'Day';
 
-await appendProductionRow(payload);
+const records: ProductionLogRow[] = [
+  // CNC 1
+  {
+    Date: formattedDate,
+    Month: formattedMonth,
+    Shift: formattedShift,
+    MachineID: 'M1',
+    Operator: 'Avinash',
+    Part_ID: '',
+    PartSide: 'OP1',
+    IdealCycle_sec: '',
+    MachineCycle_sec: 146,
+    TotalParts: 193,
+    ShiftStart: formattedDate + ' 8:30',
+    ShiftEnd: formattedDate + ' 19:00',
+    Downtime_PowerCut_min: 0,
+    Downtime_MaterialShortage_min: 0,
+    'Downtime_MachineBreakdown/setting_min': 0,
+    Downtime_Others_min: 0,
+    TotalDowntime_min: 0,
+    DowntimeReason: '',
+    Notes: notes,
+    PlannedTime_min: '',
+    RunTime_min: '',
+    MachineRuntime_min: '',
+    IdealMachineTime_min: '',
+    CycleDiff_pct: '',
+    TimeFlag: '',
+    Availability_pct: '',
+    Performance_pct: '',
+    Quality_pct: '',
+    OEE_like: '',
+    Parts_per_Hour: 30.63,
+    TotalProduction_hr: 7.83,
+  },
+  // CNC 2
+  {
+    Date: formattedDate,
+    Month: formattedMonth,
+    Shift: formattedShift,
+    MachineID: 'M2',
+    Operator: 'Sanju',
+    Part_ID: '',
+    PartSide: 'OP1',
+    IdealCycle_sec: '',
+    MachineCycle_sec: 110,
+    TotalParts: 150,
+    ShiftStart: formattedDate + ' 8:30',
+    ShiftEnd: formattedDate + ' 19:00',
+    Downtime_PowerCut_min: 0,
+    Downtime_MaterialShortage_min: 0,
+    'Downtime_MachineBreakdown/setting_min': 0,
+    Downtime_Others_min: 0,
+    TotalDowntime_min: 0,
+    DowntimeReason: '',
+    Notes: notes,
+    PlannedTime_min: '',
+    RunTime_min: '',
+    MachineRuntime_min: '',
+    IdealMachineTime_min: '',
+    CycleDiff_pct: '',
+    TimeFlag: '',
+    Availability_pct: '',
+    Performance_pct: '',
+    Quality_pct: '',
+    OEE_like: '',
+    Parts_per_Hour: 32.75,
+    TotalProduction_hr: 4.58,
+  },
+  // Burma B1
+  {
+    Date: formattedDate,
+    Month: formattedMonth,
+    Shift: formattedShift,
+    MachineID: 'B1',
+    Operator: 'Radhe',
+    Part_ID: '',
+    PartSide: 'OP1',
+    IdealCycle_sec: '',
+    MachineCycle_sec: '',
+    TotalParts: 23,
+    ShiftStart: formattedDate + ' 8:30',
+    ShiftEnd: formattedDate + ' 19:00',
+    Downtime_PowerCut_min: 0,
+    Downtime_MaterialShortage_min: 0,
+    'Downtime_MachineBreakdown/setting_min': 0,
+    Downtime_Others_min: 0,
+    TotalDowntime_min: 0,
+    DowntimeReason: '',
+    Notes: 'Burma production; cycle time not provided.',
+    PlannedTime_min: '',
+    RunTime_min: '',
+    MachineRuntime_min: '',
+    IdealMachineTime_min: '',
+    CycleDiff_pct: '',
+    TimeFlag: '',
+    Availability_pct: '',
+    Performance_pct: '',
+    Quality_pct: '',
+    OEE_like: '',
+    Parts_per_Hour: '',
+    TotalProduction_hr: '',
+  },
+  // Burma B2
+  {
+    Date: formattedDate,
+    Month: formattedMonth,
+    Shift: formattedShift,
+    MachineID: 'B2',
+    Operator: 'Manish',
+    Part_ID: '',
+    PartSide: 'OP1',
+    IdealCycle_sec: '',
+    MachineCycle_sec: '',
+    TotalParts: 21,
+    ShiftStart: formattedDate + ' 8:30',
+    ShiftEnd: formattedDate + ' 19:00',
+    Downtime_PowerCut_min: 0,
+    Downtime_MaterialShortage_min: 0,
+    'Downtime_MachineBreakdown/setting_min': 0,
+    Downtime_Others_min: 0,
+    TotalDowntime_min: 0,
+    DowntimeReason: '',
+    Notes: 'Burma production; cycle time not provided.',
+    PlannedTime_min: '',
+    RunTime_min: '',
+    MachineRuntime_min: '',
+    IdealMachineTime_min: '',
+    CycleDiff_pct: '',
+    TimeFlag: '',
+    Availability_pct: '',
+    Performance_pct: '',
+    Quality_pct: '',
+    OEE_like: '',
+    Parts_per_Hour: '',
+    TotalProduction_hr: '',
+  },
+  // Repair
+  {
+    Date: formattedDate,
+    Month: formattedMonth,
+    Shift: formattedShift,
+    MachineID: 'Repair',
+    Operator: 'Kamal',
+    Part_ID: '',
+    PartSide: 'OP1',
+    IdealCycle_sec: '',
+    MachineCycle_sec: '',
+    TotalParts: 10,
+    ShiftStart: formattedDate + ' 8:30',
+    ShiftEnd: formattedDate + ' 19:00',
+    Downtime_PowerCut_min: 0,
+    Downtime_MaterialShortage_min: 0,
+    'Downtime_MachineBreakdown/setting_min': 0,
+    Downtime_Others_min: 0,
+    TotalDowntime_min: 0,
+    DowntimeReason: '',
+    Notes: 'Repair work; thread repair; cycle time not provided.',
+    PlannedTime_min: '',
+    RunTime_min: '',
+    MachineRuntime_min: '',
+    IdealMachineTime_min: '',
+    CycleDiff_pct: '',
+    TimeFlag: '',
+    Availability_pct: '',
+    Performance_pct: '',
+    Quality_pct: '',
+    OEE_like: '',
+    Parts_per_Hour: '',
+    TotalProduction_hr: '',
+  },
+];
 
-console.log('Success. Check Logs (new row) and Daily (updated totals) in your spreadsheet.');
+console.log('Writing raw multi-record production data to Google Sheets...');
+console.log('Raw log tab (new schema):', process.env.GOOGLE_SHEET_RAW_LOG_TAB_NAME || 'Logs_Raw');
+console.log('Daily tab (derived from raw rows):', process.env.GOOGLE_SHEET_DAILY_TAB_NAME || 'Daily');
+console.log(`Records in this submission: ${records.length} (expect 5 rows in raw tab)`);
+
+await appendProductionFromRawRecords(records, {
+  submittedAt,
+  productionDate,
+  shift,
+});
+
+console.log('Success. Check Logs_Raw (5 new raw rows) and Daily (updated aggregates) in your spreadsheet.');
