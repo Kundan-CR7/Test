@@ -3,7 +3,7 @@ import type { CncEntry, CncFieldUpdate, Shift } from '../../state/types';
 import { OperatorSelect } from './OperatorSelect';
 import { MachineGrid } from './MachineGrid';
 import { HexInputWithChips } from './HexInputWithChips';
-import { SizeSelect } from './SizeSelect';
+import { SizeInput } from './SizeInput';
 import { SideToggle } from './SideToggle';
 import { CycleTimeInput } from './CycleTimeInput';
 import { TimeRangeInput } from './TimeRangeInput';
@@ -171,7 +171,7 @@ export function CncEntryCard({
           )}
         />
         <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-4">
-          <SizeSelect
+          <SizeInput
             value={entry.size}
             onChange={(value) => handleSetField({ field: 'size', value })}
             error={hardIssue(report, ['size_required'], showRequiredErrors)}
