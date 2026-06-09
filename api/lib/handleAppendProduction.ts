@@ -160,7 +160,7 @@ export async function handleAppendProduction(
     return { status: 401, body: { ok: false, error: 'unauthorized' } };
   }
 
-  // Prefer new raw per-record payload (multiple rows, new schema to Logs_Raw)
+  // Prefer new raw per-record payload (multiple rows, new schema to configured log tab / Logs)
   const raw = parseRawRecordsPayload(body);
   if (raw !== null) {
     try {

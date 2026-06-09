@@ -73,9 +73,9 @@ const now = new Date();
 const submittedAt = now.toISOString();
 const productionDate = now.toISOString().slice(0, 10);
 const shift = 'morning';
-const notes = 'API raw multi-record test — safe to delete (new Logs_Raw path)';
+const notes = 'API raw multi-record test — safe to delete';
 
-// Example: 2 CNC + 2 Burma + 1 Repair → should produce 5 rows in Logs_Raw
+// Example: 2 CNC + 2 Burma + 1 Repair → should produce 5 rows in the configured log tab
 const formattedDate = '06-06-2026'; // DD-MM-YYYY
 const formattedMonth = '2026-06';
 const formattedShift = 'Day';
@@ -254,9 +254,9 @@ const records: ProductionLogRow[] = [
 ];
 
 console.log('Writing raw multi-record production data to Google Sheets...');
-console.log('Raw log tab (new schema):', process.env.GOOGLE_SHEET_RAW_LOG_TAB_NAME || 'Logs_Raw');
+console.log('Raw log tab (new schema):', process.env.GOOGLE_SHEET_RAW_LOG_TAB_NAME || process.env.GOOGLE_SHEET_LOG_TAB_NAME || 'Logs');
 console.log('Daily tab (derived from raw rows):', process.env.GOOGLE_SHEET_DAILY_TAB_NAME || 'Daily');
-console.log(`Records in this submission: ${records.length} (expect 5 rows in raw tab)`);
+console.log(`Records in this submission: ${records.length} (expect rows in configured log tab)`);
 
 await appendProductionFromRawRecords(records, {
   submittedAt,
@@ -264,4 +264,4 @@ await appendProductionFromRawRecords(records, {
   shift,
 });
 
-console.log('Success. Check Logs_Raw (5 new raw rows) and Daily (updated aggregates) in your spreadsheet.');
+console.log('Success. Check the configured log tab (raw rows) and Daily (updated aggregates) in your spreadsheet.');

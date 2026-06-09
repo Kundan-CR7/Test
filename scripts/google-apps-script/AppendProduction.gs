@@ -110,6 +110,33 @@ function normalizeKey_(v) {
   return String(v).trim();
 }
 
+/**
+ * Format "Last Submitted At" for the Daily tab as IST (UTC+5:30).
+ * Matches the formatting used by the Vercel/Node sheets backend.
+ * Example output: "07-06-2026 23:05:42 IST"
+ */
+function formatLastSubmittedAtIST_(isoString) {
+  if (!isoString) return '';
+  var utc = new Date(isoString);
+  if (isNaN(utc.getTime())) {
+    return isoString;
+  }
+  // IST offset: +5.5 hours
+  var IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+  var ist = new Date(utc.getTime() + IST_OFFSET_MS);
+
+  function pad(n) { return ('0' + n).slice(-2); }
+
+  var dd = pad(ist.getUTCDate());
+  var mm = pad(ist.getUTCMonth() + 1);
+  var yyyy = ist.getUTCFullYear();
+  var hh = pad(ist.getUTCHours());
+  var min = pad(ist.getUTCMinutes());
+  var ss = pad(ist.getUTCSeconds());
+
+  return dd + '-' + mm + '-' + yyyy + ' ' + hh + ':' + min + ':' + ss + ' IST';
+}
+
 function payloadToLogRow_(payload) {
   function num(value) {
     return value === null || value === undefined ? '' : String(value);
@@ -140,9 +167,11 @@ function payloadToLogRow_(payload) {
 function upsertDaily_(dailySheet, payload) {
   ensureHeaders_(dailySheet, DAILY_HEADERS);
 
-  // Force first two columns (date, shift) to plain text format so they read back
-  // as the literal strings we write (helps matching across runs).
+  // Force key columns (date, shift) and "Last Submitted At" (col 8) to plain text.
+  // This ensures the IST-formatted timestamp is stored literally and is not
+  // re-interpreted or shifted by the spreadsheet's timezone setting (prevents GMT display).
   dailySheet.getRange(1, 1, Math.max(dailySheet.getLastRow(), 1000), 2).setNumberFormat('@');
+  dailySheet.getRange(1, 8, Math.max(dailySheet.getLastRow(), 1000), 1).setNumberFormat('@');
 
   var lastRow = dailySheet.getLastRow();
   var matchRow = -1;
@@ -166,7 +195,7 @@ function upsertDaily_(dailySheet, payload) {
       String(payload.burmaTotal),
       String(payload.cncEntryCount),
       1,
-      payload.submittedAt,
+      formatLastSubmittedAtIST_(payload.submittedAt),
     ]);
     return;
   }
@@ -181,7 +210,7 @@ function upsertDaily_(dailySheet, payload) {
       String(parseNumber_(existing[4]) + payload.burmaTotal),
       String(parseCount_(existing[5]) + payload.cncEntryCount),
       parseCount_(existing[6]) + 1,
-      payload.submittedAt,
+      formatLastSubmittedAtIST_(payload.submittedAt),
     ],
   ]);
 }
@@ -203,6 +232,7 @@ function doPost(e) {
     var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
     var logSheet = getOrCreateSheet_(spreadsheet, LOG_TAB_NAME);
     var dailySheet = getOrCreateSheet_(spreadsheet, DAILY_TAB_NAME);
+    Logger.log('Daily tab target: %s (Last Submitted At will be written in IST)', DAILY_TAB_NAME);
 
     ensureHeaders_(logSheet, LOG_HEADERS);
     logSheet.appendRow(payloadToLogRow_(payload));

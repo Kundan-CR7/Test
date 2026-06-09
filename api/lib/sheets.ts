@@ -106,6 +106,33 @@ function dailyTabName(): string {
   return process.env.GOOGLE_SHEET_DAILY_TAB_NAME?.trim() || 'Daily';
 }
 
+/**
+ * Format the "Last Submitted At" value for the Daily tab as IST (Indian Standard Time).
+ * Input is typically a UTC ISO string (from client generatedAt.toISOString()).
+ * Output example: "07-06-2026 23:05:42 IST"
+ * This ensures the Daily (or Daily_Production) sheet shows local factory time instead of GMT/UTC.
+ */
+function formatLastSubmittedAtIST(isoString: string): string {
+  if (!isoString) return '';
+  const utc = new Date(isoString);
+  if (isNaN(utc.getTime())) {
+    return isoString; // fallback to whatever was provided
+  }
+  // IST offset: UTC+5:30
+  const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+  const ist = new Date(utc.getTime() + IST_OFFSET_MS);
+
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const dd = pad(ist.getUTCDate());
+  const mm = pad(ist.getUTCMonth() + 1);
+  const yyyy = ist.getUTCFullYear();
+  const hh = pad(ist.getUTCHours());
+  const min = pad(ist.getUTCMinutes());
+  const ss = pad(ist.getUTCSeconds());
+
+  return `${dd}-${mm}-${yyyy} ${hh}:${min}:${ss} IST`;
+}
+
 function spreadsheetId(): string {
   const id = process.env.GOOGLE_SHEETS_ID?.trim();
   if (!id) {
@@ -341,6 +368,26 @@ async function ensureHeaders(
   });
 }
 
+async function getSheetId(
+  sheets: SheetsClient,
+  spreadsheetIdValue: string,
+  tabName: string,
+): Promise<number> {
+  const metadata = await sheets.spreadsheets.get({
+    spreadsheetId: spreadsheetIdValue,
+    fields: 'sheets.properties',
+  });
+
+  const sheet = metadata.data.sheets?.find(
+    (s) => s.properties?.title === tabName,
+  );
+
+  if (sheet?.properties?.sheetId === undefined) {
+    throw new Error(`Tab not found: ${tabName}`);
+  }
+  return sheet.properties.sheetId;
+}
+
 async function appendLogRow(
   sheets: SheetsClient,
   spreadsheetIdValue: string,
@@ -368,28 +415,38 @@ function buildDailyRow(
   payload: ProductionSheetsPayload,
   existing: unknown[] | undefined,
 ): unknown[] {
+  const lastSubmitted = formatLastSubmittedAtIST(payload.submittedAt);
+
+  // Prefix with ' + use USER_ENTERED below so these are forced to literal text
+  // (prevents Google Sheets from auto-parsing the date-like strings or applying
+  // spreadsheet timezone to "Last Submitted At"). Matches the technique used
+  // for raw log rows. The leading ' is an escape and will not be stored.
+  const prodDate = "'" + payload.productionDate;
+  const shiftVal = "'" + payload.shift;
+  const lastSub = "'" + lastSubmitted;
+
   if (!existing) {
     return [
-      payload.productionDate,
-      payload.shift,
+      prodDate,
+      shiftVal,
       payload.cncTotalHours,
       payload.cncTotalSides,
       payload.burmaTotal,
       payload.cncEntryCount,
       1,
-      payload.submittedAt,
+      lastSub,
     ];
   }
 
   return [
-    payload.productionDate,
-    payload.shift,
+    prodDate,
+    shiftVal,
     parseSheetNumber(String(existing[2])) + payload.cncTotalHours,
     parseSheetNumber(String(existing[3])) + payload.cncTotalSides,
     parseSheetNumber(String(existing[4])) + payload.burmaTotal,
     parseSheetCount(String(existing[5])) + payload.cncEntryCount,
     parseSheetCount(String(existing[6])) + 1,
-    payload.submittedAt,
+    lastSub,
   ];
 }
 
@@ -401,6 +458,54 @@ async function upsertDailyTotals(
 ) {
   await ensureSheetTab(sheets, spreadsheetIdValue, tabName);
   await ensureHeaders(sheets, spreadsheetIdValue, tabName, DAILY_SHEET_HEADERS);
+
+  // Force the critical columns in the Daily tab to plain text format.
+  // This (combined with ' prefix + USER_ENTERED on writes) ensures "Last Submitted At"
+  // (and the Production Date / Shift keys) are always stored and displayed as literal
+  // strings and are never re-parsed as dates or shifted by the spreadsheet timezone.
+  // We do this on every daily write so the format applies to the whole column over time.
+  const dailySheetId = await getSheetId(sheets, spreadsheetIdValue, tabName);
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: spreadsheetIdValue,
+    requestBody: {
+      requests: [
+        {
+          repeatCell: {
+            range: {
+              sheetId: dailySheetId,
+              startColumnIndex: 0,
+              endColumnIndex: 2, // A + B (Production Date, Shift)
+              startRowIndex: 0,
+              endRowIndex: 10000,
+            },
+            cell: {
+              userEnteredFormat: {
+                numberFormat: { type: 'TEXT' },
+              },
+            },
+            fields: 'userEnteredFormat.numberFormat',
+          },
+        },
+        {
+          repeatCell: {
+            range: {
+              sheetId: dailySheetId,
+              startColumnIndex: 7,
+              endColumnIndex: 8, // H (Last Submitted At)
+              startRowIndex: 0,
+              endRowIndex: 10000,
+            },
+            cell: {
+              userEnteredFormat: {
+                numberFormat: { type: 'TEXT' },
+              },
+            },
+            fields: 'userEnteredFormat.numberFormat',
+          },
+        },
+      ],
+    },
+  });
 
   const tab = quoteSheetTab(tabName);
 
@@ -426,7 +531,7 @@ async function upsertDailyTotals(
     await sheets.spreadsheets.values.update({
       spreadsheetId: spreadsheetIdValue,
       range: `${tab}!A${sheetRowNumber}:H${sheetRowNumber}`,
-      valueInputOption: 'RAW',
+      valueInputOption: 'USER_ENTERED',
       requestBody: {
         values: [dailyRow],
       },
@@ -437,7 +542,7 @@ async function upsertDailyTotals(
   await sheets.spreadsheets.values.append({
     spreadsheetId: spreadsheetIdValue,
     range: `${tab}!A:H`,
-    valueInputOption: 'RAW',
+    valueInputOption: 'USER_ENTERED',
     insertDataOption: 'INSERT_ROWS',
     requestBody: {
       values: [dailyRow],
@@ -450,13 +555,15 @@ export async function appendProductionRow(payload: ProductionSheetsPayload) {
   const spreadsheetIdValue = spreadsheetId();
   const logTab = logTabName();
   const dailyTab = dailyTabName();
+  console.log(`[sheets] Daily tab target (from GOOGLE_SHEET_DAILY_TAB_NAME or default): ${dailyTab}`);
 
   await appendLogRow(sheets, spreadsheetIdValue, logTab, payload);
   await upsertDailyTotals(sheets, spreadsheetIdValue, dailyTab, payload);
 }
 
 // =============================================================================
-// Raw per-record logging to separate tab (Logs_Raw) + Daily derivation from raw rows
+// Raw per-record logging to the configured log tab (GOOGLE_SHEET_LOG_TAB_NAME / Logs)
+// + Daily derivation from raw rows. Falls back to GOOGLE_SHEET_RAW_LOG_TAB_NAME if set.
 // =============================================================================
 
 export const RAW_LOG_HEADERS = [
@@ -500,7 +607,8 @@ export type ProductionLogRow = {
 function rawLogTabName(): string {
   return (
     process.env.GOOGLE_SHEET_RAW_LOG_TAB_NAME?.trim() ||
-    'Logs_Raw'
+    logTabName() ||
+    'Logs'
   );
 }
 
@@ -592,7 +700,7 @@ async function appendRawLogRows(
   const values = records.map((r) => rawRowToValues(r));
 
   // Log the final row array(s) and verify formatting (as required)
-  console.log('=== Final raw production log row arrays (exact order for Logs_Raw) ===');
+  console.log('=== Final raw production log row arrays (exact order for configured log tab) ===');
   console.log('Number of rows:', values.length);
   if (values.length > 0) {
     console.log('First row array:', values[0]);
@@ -708,8 +816,9 @@ export async function appendProductionFromRawRecords(
   const sheets = await getSheetsClient();
   const spreadsheetIdValue = spreadsheetId();
   const dailyTab = dailyTabName();
+  console.log(`[sheets] Daily tab target (from GOOGLE_SHEET_DAILY_TAB_NAME or default): ${dailyTab}`);
 
-  // 1. Write raw per-record rows to the dedicated raw tab (never touches current Logs)
+  // 1. Write raw per-record rows to the configured log tab (from env GOOGLE_SHEET_LOG_TAB_NAME or GOOGLE_SHEET_RAW_LOG_TAB_NAME)
   await appendRawLogRows(sheets, spreadsheetIdValue, records);
 
   // 2. Derive Daily metrics from the expanded raw rows and upsert (keeps Daily behavior)

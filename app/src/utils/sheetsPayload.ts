@@ -101,7 +101,7 @@ export function buildProductionSheetsPayload(
 }
 
 // =============================================================================
-// New raw per-record production log rows for Logs_Raw tab
+// New raw per-record production log rows for the configured Logs tab (or GOOGLE_SHEET_RAW_LOG_TAB_NAME if set)
 // One row per individual production record (CNC entry / Burma station / Repair).
 // Uses MachineID convention for record type (M1-M8 / B1/B2/B3 / Repair).
 // Quantities use TotalParts for all record types.
