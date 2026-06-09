@@ -347,10 +347,9 @@ export function buildProductionLogRows(
     repair.note.trim() !== '';
 
   if (hasRepair) {
-    const repairNote = repair.note && repair.note.trim() ? repair.note.trim() : '';
-    // Pass only globalNotes to base. The repair-specific note (repairNote) will only be
-    // considered for the Repair row's final Notes (see below). This prevents it from
-    // affecting CNC or Burma rows.
+    // Note: We intentionally do *not* pull in the raw repair.note here for the row's Notes.
+    // It is only used to decide whether a Repair row should be emitted at all (see hasRepair above).
+    // This prevents the repair-specific note from leaking into CNC or Burma rows.
 
     const row = createBaseRawRow(
       date,
