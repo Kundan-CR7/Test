@@ -21,7 +21,6 @@ import {
 } from './state/StateContext';
 import {
   incompleteCncEntryCount,
-  invalidNonBlankCncEntries,
   previewCtaState,
 } from './state/selectors';
 import type { BurmaField } from './state/types';
@@ -194,14 +193,18 @@ function ProductionEntryApp() {
   }, [showToast]);
 
   const handlePreview = useCallback(() => {
-    if (invalidNonBlankCncEntries(state).length > 0) {
-      dispatch({ type: 'UI_INCOMPLETE_HIGHLIGHTS_SET', value: true });
-      showToast({
-        message: 'Complete required CNC fields first.',
-        durationMs: 3000,
-      });
-      return;
-    }
+    // Do not block on incomplete CNC entries. Per the plans, incomplete
+    // (non-blank) CNC entries are simply excluded from the summary, and
+    // preview/summary is still allowed (CTA shows warning state).
+    // Pure Burma (zero CNC or only blank CNCs) is also valid.
+    // The "at least one CNC mandatory" enforcement was not intended.
+    // We still turn on highlights so the summary can show the incomplete
+    // warnings and exclusion message.
+    //
+    // The only hard block for preview is:
+    // - zero previewable data (no valid/incomplete CNC + zero Burma) → handled
+    //   by the disabled CTA calling handleEmptyPreviewTap ("Add an entry first.")
+    // - daily preview limit reached.
 
     const currentPreviewLimit = loadPreviewLimitState();
     setPreviewLimit(currentPreviewLimit);

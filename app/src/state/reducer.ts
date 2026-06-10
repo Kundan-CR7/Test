@@ -33,6 +33,18 @@ export const machines = [
 ] as const;
 export const commonHexValues = [37, 41, 46, 50, 60, 65] as const;
 
+export const sizeOptions = [
+  '1/2',
+  '3/4',
+  '1',
+  '1 1/4',
+  '1 1/2',
+  '2',
+  '2 1/2',
+  '3',
+  '4',
+] as const;
+
 type CreateBlankCncEntryParams = {
   shift: Shift;
   id?: string;

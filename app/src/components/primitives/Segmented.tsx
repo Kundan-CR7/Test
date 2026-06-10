@@ -82,7 +82,7 @@ export function Segmented<T extends string>({
             }}
             className={`flex-1 h-[44px] flex items-center justify-center rounded-[10px] cursor-pointer text-body-sm select-none outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1 transition-all duration-[140ms] ease-[cubic-bezier(0.2,0,0,1)] ${
               isSelected
-                ? 'bg-bg-card shadow-sm text-text-primary font-semibold'
+                ? 'bg-accent-600 shadow-sm text-text-inverse font-semibold'
                 : 'text-text-secondary font-medium hover:text-text-primary'
             }`}
           >
